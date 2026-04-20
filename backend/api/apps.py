@@ -95,24 +95,34 @@ class ApiConfig(AppConfig):
         # the database might not be ready yet.
        # 2. --- TEMPORARY SUPERUSER CREATION ---
         # 2. --- TEMPORARY SUPERUSER CREATION ---
+        # 2. --- TEMPORARY SUPERUSER CREATION ---
         try:
             from django.contrib.auth import get_user_model
             User = get_user_model()
             email = "muhsinkalodi9311@gmail.com"
             
-            # We remove 'username' because your custom model likely uses email only
+            # 💡 REPLACE THIS STRING with your actual UID from the Firebase Console
+            # Go to Firebase -> Authentication -> Users -> Copy 'User UID'
+            my_firebase_uid = "PASTE_YOUR_FIREBASE_UID_HERE" 
+
             u, created = User.objects.get_or_create(
                 email=email, 
-                defaults={'is_staff': True, 'is_superuser': True}
+                defaults={
+                    'is_staff': True, 
+                    'is_superuser': True,
+                    'firebase_uid': my_firebase_uid
+                }
             )
-            u.set_password("Kalodi123") 
-            u.is_superuser = True
-            u.is_staff = True
+            
+            # If the user already existed but didn't have the UID, update it
+            if not created:
+                u.firebase_uid = my_firebase_uid
+                u.is_superuser = True
+                u.is_staff = True
+            
+            u.set_password("A_Strong_Password_123!") 
             u.save()
             
-            if created:
-                print(f"✅ NEW Superuser created for {email}")
-            else:
-                print(f"✅ EXISTING Superuser updated for {email}")
+            print(f"✅ Superuser linked to Firebase UID: {email}")
         except Exception as e:
-            print(f"ℹ️ Superuser check failed: {e}")
+            print(f"ℹ️ Superuser link failed: {e}")
