@@ -78,7 +78,7 @@ DATABASES = {
 CORS_ALLOW_ALL_ORIGINS = DEBUG 
 if not DEBUG:
     CORS_ALLOWED_ORIGINS = [
-        "https://qmexai.netlify.app", 
+        "https://qmexaierp.netlify.app", 
         "https://api.qmexai.com",
     ]
 
