@@ -93,19 +93,19 @@ class ApiConfig(AppConfig):
         # 2. --- TEMPORARY SUPERUSER CREATION ---
         # We wrap this in a try/except because during 'collectstatic' in Docker build,
         # the database might not be ready yet.
+       # 2. --- TEMPORARY SUPERUSER CREATION ---
         try:
             from django.contrib.auth import get_user_model
             User = get_user_model()
             email = "muhsinkalodi9311@gmail.com"
             
-            if not User.objects.filter(email=email).exists():
-                User.objects.create_superuser(
-                    email=email,
-                    password="Kalodi123", 
-                    username="muhsin"
-                )
-                print(f"✅ Superuser created for {email}")
-        except Exception:
-            # During Docker build (collectstatic), this will fail. That is OK.
-            # It will run successfully when the actual server starts on Render.
-            pass
+            # This ensures we only run this if the 'User' table actually exists in Postgres
+            u, created = User.objects.get_or_create(email=email, defaults={'username': 'muhsin'})
+            u.set_password("Kalodi123") 
+            u.is_superuser = True
+            u.is_staff = True
+            u.save()
+            print(f"✅ Superuser setup success for {email}")
+        except Exception as e:
+            # This will catch if the table 'api_user' doesn't exist yet
+            print(f"ℹ️ Database not ready yet for Superuser check. It will work after migration: {e}")
