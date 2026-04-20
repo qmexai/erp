@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Ping Health Endpoint
         run: |
-          curl -I https://your-render-app-name.onrender.com/health/
+          curl -I https://qmexai-backend.onrender.com/health/
