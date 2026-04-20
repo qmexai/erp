@@ -1,0 +1,82 @@
+# ==============================================================================
+# Qmexai ERP Workspace .gitignore
+# ==============================================================================
+
+# --- System & IDEs ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.sup
+
+# --- Backend (Python / Django) ---
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+backend/venv/
+backend/env/
+backend/.venv/
+backend/.env/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django specific
+backend/*.log
+backend/local_settings.py
+backend/db.sqlite3
+backend/db.sqlite3-journal
+
+# Render/Static files
+backend/staticfiles/
+backend/assets/
+backend/media/
+
+# Secrets and Credentials (CRITICAL)
+backend/.env
+backend/*firebase-adminsdk*.json
+backend/qmexaierp-firebase-adminsdk-*.json
+*.pem
+*.key
+
+# --- Frontend (Node / Vue / Vite) ---
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Dependencies
+frontend/node_modules/
+
+# Production build output
+frontend/dist/
+frontend/dist-ssr/
+
+# Environment variables
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Editor directories and files
+frontend/.vscode/*
+!frontend/.vscode/extensions.json
+frontend/.idea
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
