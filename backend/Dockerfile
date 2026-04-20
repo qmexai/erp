@@ -20,4 +20,5 @@ COPY . /app/
 # Run collectstatic during the build. (Requires a dummy SECRET_KEY if settings expect one)
 RUN SECRET_KEY=dummy python manage.py collectstatic --noinput
 
-CMD ["gunicorn", "erp_core.wsgi:application", "--bind", "0.0.0.0:8000"]
+# This runs migrations and then starts the server
+CMD python manage.py migrate && gunicorn erp_core.wsgi:application --bind 0.0.0.0:8000
