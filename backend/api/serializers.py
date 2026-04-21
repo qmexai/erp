@@ -4,7 +4,7 @@ from .models import Lead, Project, FinancialRecord, LeaveRequest, Meeting, Task,
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'qm_id']
+        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'uid']
 
 class LeadSerializer(serializers.ModelSerializer):
     class Meta:
