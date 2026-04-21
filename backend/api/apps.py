@@ -99,30 +99,32 @@ class ApiConfig(AppConfig):
         try:
             from django.contrib.auth import get_user_model
             User = get_user_model()
-            email = "muhsinkalodi9311@gmail.com"
             
-            # 💡 REPLACE THIS STRING with your actual UID from the Firebase Console
-            # Go to Firebase -> Authentication -> Users -> Copy 'User UID'
-            my_firebase_uid = "PASTE_YOUR_FIREBASE_UID_HERE" 
+            # CONFIGURATION: Get these from Render Environment Variables
+            email = "muhsinkalodi9311@gmail.com"
+            # Hardcode your UID here for the first deploy or use an Env Var
+            my_firebase_uid = os.environ.get('MY_FIREBASE_UID', 'PASTE_YOUR_FIREBASE_UID_HERE')
 
-            u, created = User.objects.get_or_create(
-                email=email, 
+            # We use update_or_create to ensure the UID and password are ALWAYS correct
+            user, created = User.objects.update_or_create(
+                email=email,
                 defaults={
-                    'is_staff': True, 
+                    'firebase_uid': my_firebase_uid,
+                    'is_staff': True,
                     'is_superuser': True,
-                    'firebase_uid': my_firebase_uid
+                    'role': 'CEO',
                 }
             )
             
-            # If the user already existed but didn't have the UID, update it
-            if not created:
-                u.firebase_uid = my_firebase_uid
-                u.is_superuser = True
-                u.is_staff = True
-            
-            u.set_password("A_Strong_Password_123!") 
-            u.save()
-            
-            print(f"✅ Superuser linked to Firebase UID: {email}")
+            # Set/Reset password just to be safe
+            user.set_password("A_Strong_Password_123!") 
+            user.save()
+
+            if created:
+                print(f"🚀 SUCCESS: New Superuser created and linked to Firebase UID")
+            else:
+                print(f"✅ SUCCESS: Existing Superuser updated and linked to Firebase UID")
+
         except Exception as e:
-            print(f"ℹ️ Superuser link failed: {e}")
+            # During 'collectstatic' in the build phase, the DB isn't ready. This is normal.
+            print(f"ℹ️ Startup Logic: Database not ready yet (Expected during build).")

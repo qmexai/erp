@@ -7,13 +7,16 @@ from .models import User, Project, Meeting, LeaveRequest, FinancialRecord, Lead,
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     model = User
+    # Allow viewing of non-editable fields like qm_id
+    readonly_fields = ('qm_id',)
+
     # This adds your specific fields to the "Edit User" page
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Qmexai ERP Data', {'fields': ('role',)}),
+        ('Qmexai ERP Data', {'fields': ('role', 'qm_id')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Qmexai ERP Data', {'fields': ('role',)}),

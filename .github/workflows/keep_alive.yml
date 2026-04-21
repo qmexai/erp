@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Ping Health Endpoint
         run: |
-          curl -I https://qmexai-backend.onrender.com/health/
+          curl -A "GitHub-Keep-Alive/1.0" -L -I https://erp-e1ax.onrender.com/health/

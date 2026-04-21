@@ -66,10 +66,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'erp_core.wsgi.application'
 
 # --- DATABASE ---
-# Uses DATABASE_URL from Render/Neon; falls back to local sqlite during Docker build
+# Uses DATABASE_URL from Render/Neon; falls back to local postgres
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/qmexai_db'),
         conn_max_age=600
     )
 }
