@@ -85,6 +85,14 @@ if not DEBUG:
         "https://api.qmexai.com",
     ]
 
+# --- CSRF SETTINGS ---
+CSRF_TRUSTED_ORIGINS = [
+    "https://erp.qmexai.com",
+    "https://qmexaierp.netlify.app",
+    "https://api.qmexai.com",
+    "https://api.erp.qmexai.com"
+]
+
 # --- PRODUCTION SECURITY SETTINGS ---
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
