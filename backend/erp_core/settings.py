@@ -13,11 +13,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-q-k3zx-d(d#2j%34t4war
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # ALLOWED HOSTS: Dynamic logic to handle Render's random URLs and your custom domain
-ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get(
-    'ALLOWED_HOSTS', 
-    
-    'api.erp.qmexai.com erp-e1ax.onrender.com qmexai-api.onrender.com api.qmexai.com localhost 127.0.0.1'
-).split(' ')
+ALLOWED_HOSTS = ['*'] if DEBUG else [
+    host.strip() for host in os.environ.get(
+        'ALLOWED_HOSTS', 
+        'api.erp.qmexai.com,erp-e1ax.onrender.com,api.qmexai.com,localhost,127.0.0.1'
+    ).replace(' ', ',').split(',') if host.strip()
+]
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
