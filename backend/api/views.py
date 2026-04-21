@@ -507,8 +507,9 @@ class FirebaseLoginView(APIView):
             return Response({"error": "No token provided"}, status=400)
 
         try:
-            decoded_token = firebase_auth.verify_id_token(token)
+            decoded_token = firebase_auth.verify_id_token(token, clock_skew_seconds=10)
             email = decoded_token.get('email')
+            uid = decoded_token.get('uid')
             if not email:
                 return Response({"error": "Email not found in Firebase token"}, status=400)
 
@@ -516,10 +517,13 @@ class FirebaseLoginView(APIView):
             user, created = User.objects.get_or_create(email=email)
 
             if created:
+                user.uid = uid
+                user.save()
                 logger.info(f"New user created via login: {email}")
-                # You might want to set a default role or other fields for new users here
-                # user.role = 'Employee'
-                # user.save()
+            else:
+                if uid and not user.uid:
+                    user.uid = uid
+                    user.save()
 
             if not user.is_active:
                 return Response({"error": "Account is inactive"}, status=403)
@@ -532,7 +536,7 @@ class FirebaseLoginView(APIView):
             return Response({"error": "Invalid Firebase token"}, status=401)
         except Exception as e:
             logger.error(f"An unexpected error occurred during login: {e}")
-            return Response({"error": "Authentication failed"}, status=401)
+            return Response({"error": f"Authentication failed: {str(e)}"}, status=401)
 
 # --- 3. CREATE EMPLOYEE VIEW ---
 class CreateEmployeeView(APIView):
