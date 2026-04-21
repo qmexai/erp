@@ -71,7 +71,8 @@ const form = ref({
 });
 
 const fetchMeetings = async () => {
-  const res = await fetch('http://localhost:8000/api/meetings/', {
+  const backendUrl = import.meta.env.VITE_API_URL || 'https://erp-e1ax.onrender.com';
+  const res = await fetch(`${backendUrl}/api/meetings/`, {
     headers: { Authorization: `Bearer ${auth.token}` }
   });
   meetings.value = await res.json();
@@ -79,7 +80,8 @@ const fetchMeetings = async () => {
 
 const addMeeting = async () => {
   const payload = { ...form.value, participants: form.value.participants.split(',').map(s => s.trim()) };
-  await fetch('http://localhost:8000/api/meetings/', {
+  const backendUrl = import.meta.env.VITE_API_URL || 'https://erp-e1ax.onrender.com';
+  await fetch(`${backendUrl}/api/meetings/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
