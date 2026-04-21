@@ -90,37 +90,4 @@ class ApiConfig(AppConfig):
                 else:
                     print("⚠️ Firebase credentials not found. Skipping initialization.")
 
-        # 2. --- TEMPORARY SUPERUSER CREATION ---
-        # We wrap this in a try/except because during 'collectstatic' in Docker build,
-        # the database might not be ready yet.
-       # 2. --- TEMPORARY SUPERUSER CREATION ---
-        # 2. --- TEMPORARY SUPERUSER CREATION ---
-        # 2. --- TEMPORARY SUPERUSER CREATION ---
-        # 2. --- PRODUCTION SUPERUSER CREATION & LINKING ---
-        try:
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            
-            email = "muhsinkalodi9311@gmail.com"
-
-            user, created = User.objects.update_or_create(
-                email=email,
-                defaults={
-                    'is_staff': True,
-                    'is_superuser': True,
-                    'role': 'CEO',
-                }
-            )
-            
-            user.set_password("A_Strong_Password_123!") 
-            user.save()
-
-            if created:
-                print(f"🚀 SUCCESS: New Superuser created and linked to Firebase UID")
-            else:
-                print(f"✅ SUCCESS: Existing Superuser updated and linked to Firebase UID")
-
-        except Exception as e:
-            # We add the error message 'e' here so you can see if it's a real error 
-            # or just the database not being ready during build.
-            print(f"ℹ️ Startup Logic Status: {e}")
+        #
