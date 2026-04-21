@@ -15,7 +15,8 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 # ALLOWED HOSTS: Dynamic logic to handle Render's random URLs and your custom domain
 ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get(
     'ALLOWED_HOSTS', 
-    'erp-e1ax.onrender.com qmexai-api.onrender.com api.qmexai.com localhost 127.0.0.1'
+    
+    'api.erp.qmexai.com erp-e1ax.onrender.com qmexai-api.onrender.com api.qmexai.com localhost 127.0.0.1'
 ).split(' ')
 
 # --- APPLICATION DEFINITION ---
@@ -78,6 +79,7 @@ DATABASES = {
 CORS_ALLOW_ALL_ORIGINS = DEBUG 
 if not DEBUG:
     CORS_ALLOWED_ORIGINS = [
+        "https://erp.qmexai.com",
         "https://qmexaierp.netlify.app", 
         "https://api.qmexai.com",
     ]
