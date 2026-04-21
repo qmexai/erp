@@ -11,4 +11,5 @@ jobs:
     steps:
       - name: Ping Health Endpoint
         run: |
-          curl -A "GitHub-Keep-Alive/1.0" -L -I https://erp-e1ax.onrender.com/health/
+          echo "Pinging the backend to prevent sleep..."
+          curl -s -o /dev/null -w "%{http_code}" https://erp-e1ax.onrender.com/health/
