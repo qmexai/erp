@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', {
       console.log('[AUTH] Firebase token:', token);
       // Verify with Django
       // Use the Render backend URL instead of localhost
-      const backendUrl = import.meta.env.VITE_API_URL || 'https://erp-e1ax.onrender.com';
+      const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'https://erp-e1ax.onrender.com';
       const response = await axios.post(`${backendUrl}/api/login/`, { token });
       console.log('[AUTH] Django login response:', response.data);
       this.user = response.data; // The whole user object is the response

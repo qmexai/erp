@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { useAuthStore } from './stores/auth';
 
+const baseUrl = import.meta.env.VITE_API_URL || 'https://erp-e1ax.onrender.com';
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://erp-e1ax.onrender.com/api',
+  baseURL: baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
