@@ -102,14 +102,10 @@ class ApiConfig(AppConfig):
             User = get_user_model()
             
             email = "muhsinkalodi9311@gmail.com"
-            # It's better to fetch this from Render Env Vars
-            my_firebase_uid = os.environ.get('MY_FIREBASE_UID', 'PASTE_YOUR_UID_HERE')
 
-            # We use firebase_uid (matching your models.py)
             user, created = User.objects.update_or_create(
                 email=email,
                 defaults={
-                    'firebase_uid': my_firebase_uid, # Changed from 'uid'
                     'is_staff': True,
                     'is_superuser': True,
                     'role': 'CEO',
