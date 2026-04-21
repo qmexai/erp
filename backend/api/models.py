@@ -42,7 +42,7 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
-    qm_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    uid = models.CharField(max_length=255, unique=True, editable=True, blank=True, null=True)
     ROLE_CHOICES = (
         ('CEO', 'Chief Executive Officer'),
         ('HR', 'Human Resources'),
@@ -63,17 +63,11 @@ class User(AbstractUser):
         return self.email
 
     def save(self, *args, **kwargs):
-        if not self.qm_id:
-            # Generate a unique QM ID
-            while True:
-                new_id = f"QM-{uuid.uuid4().hex[:6].upper()}"
-                if not User.objects.filter(qm_id=new_id).exists():
-                    self.qm_id = new_id
-                    break
+        # UIDs are assigned by Firebase Auth or created manually via Django Admin
         super().save(*args, **kwargs)
 
     @staticmethod
-    def generate_qm_id(role):
+    def generate_uid(role):
         """
         Generates role-specific IDs like QM-DH-001 or QM-EMP-001.
         """

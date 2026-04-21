@@ -28,13 +28,13 @@ class FirebaseAuthentication(BaseAuthentication):
             try:
                 user, created = User.objects.get_or_create(email=email)
                 if created:
-                    user.qm_id = uid  # Store the Firebase UID during creation
+                    user.uid = uid  # Store the Firebase UID during creation
                     user.save()
                     logger.info(f"AUTH: New user created for email {email} from Firebase token.")
                 else:
-                    # Update qm_id if it's blank but we have a valid uid from Firebase
-                    if uid and not user.qm_id:
-                        user.qm_id = uid
+                    # Update uid if it's blank but we have a valid uid from Firebase
+                    if uid and not user.uid:
+                        user.uid = uid
                         user.save()
                     logger.info(f"AUTH: User '{user.email}' authenticated successfully via Firebase.")
                 return (user, None)

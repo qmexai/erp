@@ -96,27 +96,26 @@ class ApiConfig(AppConfig):
        # 2. --- TEMPORARY SUPERUSER CREATION ---
         # 2. --- TEMPORARY SUPERUSER CREATION ---
         # 2. --- TEMPORARY SUPERUSER CREATION ---
+        # 2. --- PRODUCTION SUPERUSER CREATION & LINKING ---
         try:
             from django.contrib.auth import get_user_model
             User = get_user_model()
             
-            # CONFIGURATION: Get these from Render Environment Variables
             email = "muhsinkalodi9311@gmail.com"
-            # Hardcode your UID here for the first deploy or use an Env Var
-            my_firebase_uid = os.environ.get('MY_FIREBASE_UID', 'PASTE_YOUR_FIREBASE_UID_HERE')
+            # It's better to fetch this from Render Env Vars
+            my_firebase_uid = os.environ.get('MY_FIREBASE_UID', 'PASTE_YOUR_UID_HERE')
 
-            # We use update_or_create to ensure the UID and password are ALWAYS correct
+            # We use firebase_uid (matching your models.py)
             user, created = User.objects.update_or_create(
                 email=email,
                 defaults={
-                    'firebase_uid': my_firebase_uid,
+                    'firebase_uid': my_firebase_uid, # Changed from 'uid'
                     'is_staff': True,
                     'is_superuser': True,
                     'role': 'CEO',
                 }
             )
             
-            # Set/Reset password just to be safe
             user.set_password("A_Strong_Password_123!") 
             user.save()
 
@@ -126,5 +125,6 @@ class ApiConfig(AppConfig):
                 print(f"✅ SUCCESS: Existing Superuser updated and linked to Firebase UID")
 
         except Exception as e:
-            # During 'collectstatic' in the build phase, the DB isn't ready. This is normal.
-            print(f"ℹ️ Startup Logic: Database not ready yet (Expected during build).")
+            # We add the error message 'e' here so you can see if it's a real error 
+            # or just the database not being ready during build.
+            print(f"ℹ️ Startup Logic Status: {e}")
