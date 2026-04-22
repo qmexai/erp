@@ -1,43 +1,42 @@
 import os
 import dj_database_url
+import json
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- ENVIRONMENT VARIABLES ---
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-q-k3zx-d(d#2j%34t4warvpr*q$t6+%)b&qt$4kjrku@=jf3@7')
-
-# SECURITY WARNING: don't run with debug turned on in production!
+# --- SECURITY ---
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-this-in-prod')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ALLOWED HOSTS: Dynamic logic to handle Render's random URLs and your custom domain
+# Dynamic ALLOWED_HOSTS
 ALLOWED_HOSTS = ['*'] if DEBUG else [
-    host.strip() for host in os.environ.get(
-        'ALLOWED_HOSTS', 
-        'api.erp.qmexai.com,erp-e1ax.onrender.com,api.qmexai.com,localhost,127.0.0.1'
-    ).replace(' ', ',').split(',') if host.strip()
+    'api.erp.qmexai.com',
+    'erp-e1ax.onrender.com',
+    'api.qmexai.com',
+    'localhost',
+    '127.0.0.1'
 ]
 
-# --- APPLICATION DEFINITION ---
+# --- APP DEFINITION ---
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic', # Essential for production static files
+    'whitenoise.runserver_nostatic', 
     'django.contrib.staticfiles',
     'corsheaders',
-    'api.apps.ApiConfig', 
     'rest_framework',
+    'api.apps.ApiConfig', 
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # Must be at the top
+    'corsheaders.middleware.CorsMiddleware', # TOP PRIORITY
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Place right after SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -68,7 +67,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'erp_core.wsgi.application'
 
 # --- DATABASE ---
-# Uses DATABASE_URL from Render/Neon; falls back to local postgres
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/qmexai_db'),
@@ -76,27 +74,30 @@ DATABASES = {
     )
 }
 
-# --- CORS SETTINGS ---
-CORS_ALLOW_ALL_ORIGINS = DEBUG 
+# --- CORS & CSRF (THE FIX) ---
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG 
 
 if not DEBUG:
+    # Who can talk to this API
     CORS_ALLOWED_ORIGINS = [
         "https://erp.qmexai.com",
         "https://qmexaierp.netlify.app", 
+        "https://qmexai.com",
+        "https://www.qmexai.com",
+    ]
+    
+    # Who is trusted for POST/PUT/DELETE requests
+    CSRF_TRUSTED_ORIGINS = [
+        "https://erp.qmexai.com",
+        "https://api.erp.qmexai.com",
         "https://api.qmexai.com",
+        "https://erp-e1ax.onrender.com"
     ]
 
-# --- CSRF SETTINGS ---
-CSRF_TRUSTED_ORIGINS = [
-    "https://erp.qmexai.com",
-    "https://qmexaierp.netlify.app",
-    "https://api.qmexai.com",
-    "https://api.erp.qmexai.com"
-]
-
-# --- PRODUCTION SECURITY SETTINGS ---
+# --- PRODUCTION SECURITY ---
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -106,8 +107,6 @@ if not DEBUG:
 # --- STATIC FILES ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Use WhiteNoise for high-performance static file serving
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -122,12 +121,15 @@ AUTHENTICATION_BACKENDS = [
     'api.authentication.FirebaseAuthentication',
 ]
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
+# --- REST FRAMEWORK CONFIG ---
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'api.authentication.FirebaseAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 # --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'en-us'
