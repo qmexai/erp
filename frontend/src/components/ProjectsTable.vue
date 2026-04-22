@@ -92,6 +92,10 @@
             <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Phone Number</label>
             <input v-model="editingProject.phone" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
           </div>
+          <div>
+            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Description</label>
+            <textarea v-model="editingProject.description" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]" rows="3"></textarea>
+          </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Status</label>
