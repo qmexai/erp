@@ -20,8 +20,8 @@
           <tr>
             <th class="pl-4">Project Name</th>
             <th>Client</th>
-            <th>Company</th>
-            <th>Phone</th>
+            <th v-if="!hideCompanyPhone">Company</th>
+            <th v-if="!hideCompanyPhone">Phone</th>
             <th>Description</th>
             <th>Status</th>
             <th>Assigned Team</th>
@@ -32,8 +32,8 @@
           <tr v-for="project in projects" :key="project.id">
             <td class="fw pl-4">{{ project.name }}</td>
             <td>{{ project.client }}</td>
-            <td>{{ project.company || '—' }}</td>
-            <td>{{ project.phone || '—' }}</td>
+            <td v-if="!hideCompanyPhone">{{ project.company || '—' }}</td>
+            <td v-if="!hideCompanyPhone">{{ project.phone || '—' }}</td>
             <td class="max-w-xs truncate" :title="project.description">{{ project.description || '—' }}</td>
             <td>
               <select 
@@ -134,6 +134,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import apiClient from '../api';
+
+const props = defineProps({
+  hideCompanyPhone: {
+    type: Boolean,
+    default: false
+  }
+});
 
 const projects = ref([]);
 const allUsers = ref([]);

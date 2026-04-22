@@ -256,7 +256,7 @@
           <div class="panel-title"><span class="accent green" />All projects</div>
           <button class="panel-btn">Export</button>
         </div>
-        <div class="panel-bd"><ProjectsTable :projects="projects" /></div>
+        <div class="panel-bd"><ProjectsTable :hideCompanyPhone="true" /></div>
       </div>
     </template>
 
