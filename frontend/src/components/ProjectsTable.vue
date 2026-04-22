@@ -20,6 +20,8 @@
           <tr>
             <th class="pl-4">Project Name</th>
             <th>Client</th>
+            <th>Company</th>
+            <th>Phone</th>
             <th>Description</th>
             <th>Status</th>
             <th>Assigned Team</th>
@@ -30,6 +32,8 @@
           <tr v-for="project in projects" :key="project.id">
             <td class="fw pl-4">{{ project.name }}</td>
             <td>{{ project.client }}</td>
+            <td>{{ project.company || '—' }}</td>
+            <td>{{ project.phone || '—' }}</td>
             <td class="max-w-xs truncate" :title="project.description">{{ project.description || '—' }}</td>
             <td>
               <select 
@@ -84,6 +88,16 @@
           <div>
             <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Client</label>
             <input v-model="editingProject.client" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-blue)] text-[13px]">
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Company</label>
+              <input v-model="editingProject.company" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-blue)] text-[13px]">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Phone</label>
+              <input v-model="editingProject.phone" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-blue)] text-[13px]">
+            </div>
           </div>
           <div>
             <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Description</label>

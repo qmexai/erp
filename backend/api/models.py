@@ -114,6 +114,8 @@ class Project(models.Model):
     )
     name = models.CharField(max_length=200)
     client = models.CharField(max_length=200)
+    company = models.CharField(max_length=200, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
     description = models.TextField()
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Not Started')
     start_date = models.DateField(null=True, blank=True)
