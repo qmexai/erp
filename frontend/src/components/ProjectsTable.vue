@@ -15,8 +15,8 @@
           <tr>
             <th class="pl-4">Project Name</th>
             <th>Client</th>
-            <th>Company</th>
-            <th>Phone</th>
+            <th v-if="!hideCompanyPhone">Company</th>
+            <th v-if="!hideCompanyPhone">Phone</th>
             <th>Description</th>
             <th>Status</th>
             <th>Assigned Team</th>
@@ -27,8 +27,8 @@
           <tr v-for="project in projects" :key="project.id">
             <td class="fw pl-4">{{ project.name }}</td>
             <td>{{ project.client }}</td>
-            <td>{{ project.company_name || '—' }}</td>
-            <td>{{ project.phone_number || '—' }}</td>
+            <td v-if="!hideCompanyPhone">{{ project.company || '—' }}</td>
+            <td v-if="!hideCompanyPhone">{{ project.phone || '—' }}</td>
             <td class="max-w-xs truncate" :title="project.description">{{ project.description || '—' }}</td>
             <td>
               <select 
@@ -85,12 +85,12 @@
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Company</label>
-              <input v-model="editingProject.company_name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+              <input v-model="editingProject.company" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
             </div>
           </div>
           <div>
             <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Phone Number</label>
-            <input v-model="editingProject.phone_number" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+            <input v-model="editingProject.phone" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
