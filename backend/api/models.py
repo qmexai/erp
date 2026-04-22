@@ -241,6 +241,8 @@ class Lead(models.Model):
             Project.objects.create(
                 name=f"{self.client_name} - Project",
                 client=self.client_name,
+                company=self.company_name,
+                phone=self.phone_number,
                 description=f"Services: {', '.join(self.services_needed)}"
             )
 

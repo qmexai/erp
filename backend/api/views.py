@@ -119,6 +119,8 @@ class LeadViewSet(viewsets.ModelViewSet):
         project = Project.objects.create(
             name=f"Project for {lead.client_name}",
             client=lead.client_name,
+            company=lead.company_name,
+            phone=lead.phone_number,
             description=f"Project initiated from lead. Services: {', '.join(lead.services_needed)}. Notes: {lead.notes}",
             status='Not Started'
         )
