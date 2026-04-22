@@ -163,7 +163,10 @@ const fetchUsers = async () => {
 };
 
 const openEditModal = (project) => {
-  editingProject.value = { ...project };
+  editingProject.value = { 
+    ...project,
+    assigned_to_ids: project.assigned_to ? project.assigned_to.map(u => u.id) : []
+  };
   showEditModal.value = true;
 };
 

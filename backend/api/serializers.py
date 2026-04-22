@@ -14,7 +14,7 @@ class LeadSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     assigned_to = UserSerializer(many=True, read_only=True)
     assigned_to_ids = serializers.PrimaryKeyRelatedField(
-        many=True, write_only=True, queryset=User.objects.all(), source='assigned_to'
+        many=True, write_only=True, queryset=User.objects.all(), source='assigned_to', required=False
     )
 
     class Meta:
