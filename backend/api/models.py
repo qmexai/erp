@@ -79,15 +79,15 @@ class User(AbstractUser):
         }
         prefix = prefix_map.get(role, 'QM-USR')
         
-        # Look for the last user created with this specific prefix
-        last_user = User.objects.filter(username__startswith=prefix).order_by('id').last()
+        # safely look for the last created user with this specific prefix
+        last_user = User.objects.filter(uid__startswith=prefix).order_by('id').last()
         
-        if not last_user:
+        if not last_user or not last_user.uid:
             return f"{prefix}-001"
         
         try:
-            # Extract the number part from the last username (e.g., '001')
-            last_id_part = last_user.username.split('-')[-1]
+            # Extract the number part from the last uid (e.g., '001')
+            last_id_part = last_user.uid.split('-')[-1]
             new_number = int(last_id_part) + 1
             return f"{prefix}-{new_number:03d}"
         except (ValueError, IndexError):

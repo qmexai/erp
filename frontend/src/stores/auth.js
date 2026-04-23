@@ -42,8 +42,8 @@ export const useAuthStore = defineStore('auth', {
         return null;
       }
       try {
-        // The `true` forces a token refresh if the current one is expired.
-        const token = await auth.currentUser.getIdToken(true);
+        // Remove `true` to use cached token instead of forcing network request on every call
+        const token = await auth.currentUser.getIdToken();
         this.token = token;
         localStorage.setItem('token', token);
         console.log('[AUTH] Token refreshed successfully.');

@@ -17,6 +17,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 import io
+import csv
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,10 @@ class IsCEOOrHR(permissions.BasePermission):
 
 class IsManagerOrHigher(permissions.BasePermission):
     """
-    Custom permission for Managers, HR, and CEO.
+    Custom permission for Dept Head, HR, and CEO.
     """
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['CEO', 'HR', 'Manager']
+        return request.user.is_authenticated and request.user.role in ['CEO', 'HR', 'Dept Head']
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
@@ -152,7 +153,7 @@ class LeadViewSet(viewsets.ModelViewSet):
 # --- 6. PROJECT MANAGEMENT ---
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
-    queryset = Project.objects.all().order_by('-created_at')
+    queryset = Project.objects.all().prefetch_related('assigned_to').order_by('-created_at')
     authentication_classes = [FirebaseAuthentication]
     
     def get_permissions(self):
@@ -169,8 +170,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         if user.role in ['CEO', 'HR']:
-            return Project.objects.all().order_by('-created_at')
-        return user.projects.all().order_by('-created_at')
+            return Project.objects.all().prefetch_related('assigned_to').order_by('-created_at')
+        return user.projects.all().prefetch_related('assigned_to').order_by('-created_at')
 
     def perform_create(self, serializer):
         project = serializer.save()
@@ -220,7 +221,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return response
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all().order_by('-issue_date')
+    queryset = Invoice.objects.all().select_related('project').prefetch_related('line_items').order_by('-issue_date')
     serializer_class = InvoiceSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsManagerOrHigher]
@@ -308,7 +309,7 @@ class LineItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCEOOrHR]
 
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ActivityLog.objects.all().order_by('-timestamp')
+    queryset = ActivityLog.objects.all().select_related('actor').order_by('-timestamp')
     serializer_class = ActivityLogSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsCEOOrHR]
@@ -316,7 +317,7 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
 # --- 7. FINANCE MANAGEMENT ---
 class FinanceViewSet(viewsets.ModelViewSet):
     serializer_class = FinancialRecordSerializer
-    queryset = FinancialRecord.objects.all().order_by('-date')
+    queryset = FinancialRecord.objects.all().select_related('added_by', 'project').order_by('-date')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsCEOOrHR]
 
@@ -333,7 +334,7 @@ class FinanceViewSet(viewsets.ModelViewSet):
         return response
 
     def get_queryset(self):
-        return FinancialRecord.objects.all().order_by('-date')
+        return FinancialRecord.objects.all().select_related('added_by', 'project').order_by('-date')
 
     @action(detail=False, methods=['get'])
     def download(self, request):
@@ -349,7 +350,7 @@ class FinanceViewSet(viewsets.ModelViewSet):
 # --- 8. LEAVE MANAGEMENT ---
 class LeaveViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
-    queryset = LeaveRequest.objects.all().order_by('-start_date')
+    queryset = LeaveRequest.objects.all().select_related('employee').order_by('-start_date')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -368,12 +369,12 @@ class LeaveViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'CEO':
-            return LeaveRequest.objects.all()
+            return LeaveRequest.objects.all().select_related('employee')
         elif user.role == 'HR':
-            return LeaveRequest.objects.filter(employee__role__in=['Employee', 'Dept Head'])
+            return LeaveRequest.objects.filter(employee__role__in=['Employee', 'Dept Head']).select_related('employee')
         elif user.role == 'Dept Head':
-            return LeaveRequest.objects.filter(employee__department=user.department)
-        return LeaveRequest.objects.filter(employee=user)
+            return LeaveRequest.objects.filter(employee__department=user.department).select_related('employee')
+        return LeaveRequest.objects.filter(employee=user).select_related('employee')
 
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
@@ -406,7 +407,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
 # --- 9. MEETING MANAGEMENT ---
 class MeetingViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingSerializer
-    queryset = Meeting.objects.all().order_by('-start_time')
+    queryset = Meeting.objects.all().select_related('host').prefetch_related('participants').order_by('-start_time')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -425,7 +426,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         # Use .distinct() to avoid duplicate meetings if a user is both a host and a participant.
-        return (Meeting.objects.filter(participants=user) | Meeting.objects.filter(host=user)).distinct()
+        return (Meeting.objects.filter(participants=user) | Meeting.objects.filter(host=user)).distinct().select_related('host').prefetch_related('participants')
 
 # --- 10. TASK MANAGEMENT ---
 class TaskViewSet(viewsets.ModelViewSet):
@@ -444,10 +445,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         view = self.request.query_params.get('view', 'assigned_to_me')
 
         if view == 'assigned_by_me':
-            return Task.objects.filter(assigned_by=user).order_by('-created_at')
+            return Task.objects.filter(assigned_by=user).select_related('assigned_to', 'assigned_by', 'project').order_by('-created_at')
         
         # Default to tasks assigned to the user
-        return Task.objects.filter(assigned_to=user).order_by('-created_at')
+        return Task.objects.filter(assigned_to=user).select_related('assigned_to', 'assigned_by', 'project').order_by('-created_at')
 
     def perform_create(self, serializer):
         """
@@ -622,7 +623,7 @@ class DashboardStatsView(APIView):
             
             # Invoice Stats
             paid_invoices = Invoice.objects.filter(status='Paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-            pending_invoices = Invoice.objects.filter(status='Pending').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            pending_invoices = Invoice.objects.filter(status='Unpaid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
             overdue_invoices = Invoice.objects.filter(status='Overdue').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
             
             stats['paid_invoices_total'] = paid_invoices
@@ -630,7 +631,7 @@ class DashboardStatsView(APIView):
             stats['overdue_invoices_total'] = overdue_invoices
             stats['current_balance'] = total_revenue - total_expenses # Simplified, can be more complex
 
-        elif user.role == 'Manager':
+        elif user.role == 'Dept Head':
             stats['assigned_projects'] = user.projects.count()
             stats['tasks_assigned_by_you'] = Task.objects.filter(assigned_by=user).count()
             stats['your_completed_tasks'] = Task.objects.filter(assigned_to=user, completed=True).count()

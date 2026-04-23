@@ -79,7 +79,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import apiClient from '../api';
-import AddTaskModal from './AddTaskModal.vue'; // Separate component for the modal
+import AddTaskModal from './AddTaskModal.vue';
+import { fmtDateShort as formatDate } from '../utils/formatters';
 
 const tasks = ref([]);
 const users = ref([]);
@@ -100,7 +101,7 @@ const fetchTasks = async () => {
 const fetchUsers = async () => {
   try {
     const response = await apiClient.get('/users/');
-    users.value = response.data;
+    users.value = response.data.results || response.data;
   } catch (error) {
     console.error('Error fetching users:', error);
   }
@@ -141,11 +142,6 @@ onMounted(() => {
   fetchUsers();
   fetchProjects();
 });
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
-};
 
 const isOverdue = (dateStr) => {
   if (!dateStr) return false;

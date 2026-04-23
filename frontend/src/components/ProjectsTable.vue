@@ -171,8 +171,12 @@ const closeEditModal = () => {
 
 const updateProject = async () => {
   try {
-    // Send updated project data with company_name and phone_number
-    await apiClient.put(`/projects/${editingProject.value.id}/`, editingProject.value);
+    // Backend ProjectSerializer requires 'assigned_to_ids' for writable assignees
+    const payload = {
+      ...editingProject.value,
+      assigned_to_ids: editingProject.value.assigned_to
+    };
+    await apiClient.put(`/projects/${editingProject.value.id}/`, payload);
     await fetchProjects();
     closeEditModal();
   } catch (error) {

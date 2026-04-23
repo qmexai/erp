@@ -52,9 +52,10 @@ const filteredRecords = computed(() => {
 });
 
 const currentBalance = computed(() => {
-  return records.value.reduce((acc, curr) => 
-    curr.type === 'Revenue' ? acc + Number(curr.amount) : acc - Number(curr.amount), 0
-  );
+  return filteredRecords.value.reduce((acc, curr) => {
+    const isRev = curr.type.toLowerCase().includes('rev') || curr.type.toLowerCase() === 'income';
+    return isRev ? acc + Number(curr.amount) : acc - Number(curr.amount);
+  }, 0);
 });
 
 onMounted(async () => {

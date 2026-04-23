@@ -92,6 +92,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import api from '../api';
+import { formatCurrency, fmtDate } from '../utils/formatters';
 
 // State Management
 const records = ref([]);
@@ -169,24 +170,6 @@ const downloadCSV = async () => {
 };
 
 // Formatting Helpers
-const formatCurrency = (value) => {
-    // Set to INR for Kerala context
-    return new Intl.NumberFormat('en-IN', { 
-        style: 'currency', 
-        currency: 'INR',
-        maximumFractionDigits: 0 
-    }).format(value);
-}
-
-const fmtDate = (dateString) => {
-  if (!dateString) return '—';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
-};
 
 onMounted(() => {
     fetchRecords();

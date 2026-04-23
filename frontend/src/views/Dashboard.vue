@@ -1,20 +1,42 @@
 <template>
   <div class="dashboard">
-
-    <!-- Loading -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="spinner" />
-      <span>Loading dashboard…</span>
+    <!-- Loading Skeleton Impact -->
+    <div v-if="loading" class="w-full min-h-screen pt-4">
+      <div class="animate-pulse space-y-6">
+        <!-- Header Skeleton -->
+        <div class="flex justify-between items-start">
+          <div class="space-y-3">
+            <div class="h-10 w-72 bg-white/5 rounded-lg border border-white/5"></div>
+            <div class="h-4 w-48 bg-white/5 rounded-md"></div>
+          </div>
+          <div class="h-16 w-32 bg-white/5 rounded-2xl border border-white/5"></div>
+        </div>
+        <!-- Stats Row Skeleton -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-for="n in 4" :key="n" class="h-32 bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-4 flex flex-col justify-between">
+             <div class="h-3 w-20 bg-white/10 rounded"></div>
+             <div class="h-8 w-32 bg-white/10 rounded"></div>
+             <div class="h-6 w-full bg-white/5 rounded-t tracking-wider"></div>
+          </div>
+        </div>
+        <!-- Mid Grid Skeleton -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="h-[400px] bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-5"></div>
+          <div class="lg:col-span-2 h-[400px] bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-5"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- Error -->
-    <div v-if="error" class="error-banner">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.5"/>
-      </svg>
-      {{ error }}
-      <button class="retry-btn" @click="fetchAll">Retry</button>
-    </div>
+    <!-- Main Content -->
+    <div v-else class="w-full relative">
+      <!-- Error -->
+      <div v-if="error" class="error-banner">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.5"/>
+        </svg>
+        {{ error }}
+        <button class="retry-btn" @click="fetchAll">Retry</button>
+      </div>
 
     <!-- Page header -->
     <div class="page-header">
@@ -260,6 +282,7 @@
       </div>
     </template>
 
+    </div> <!-- Close Main Content wrapper -->
   </div>
 </template>
 
@@ -267,6 +290,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import apiClient from '../api'
+import { formatCurrency, fmtDateShort as fmtDate } from '../utils/formatters'
 
 import AddEmployee        from '../components/AddEmployee.vue'
 import LeadsTable         from '../components/LeadsTable.vue'
@@ -361,17 +385,6 @@ const fetchAll = async () => {
 onMounted(fetchAll)
 
 /* ── Helpers ─────────────────────────────────────────────── */
-function formatCurrency(val) {
-  if (!val) return '₹0'
-  const n = Number(val)
-  if (n >= 100000) return `₹${(n/100000).toFixed(1)}L`
-  if (n >= 1000)   return `₹${(n/1000).toFixed(1)}K`
-  return `₹${n.toLocaleString('en-IN')}`
-}
-function fmtDate(d) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-}
 function statusCls(s) {
   return { Active:'active', Completed:'closed', 'In Review':'review', Pending:'pending', 'On Hold':'review', Cancelled:'leave' }[s] || 'pending'
 }

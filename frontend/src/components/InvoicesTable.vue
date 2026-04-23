@@ -96,6 +96,7 @@
 import { ref, onMounted } from 'vue';
 import api from '../api';
 import CreateInvoiceModal from './CreateInvoiceModal.vue';
+import { formatCurrency } from '../utils/formatters';
 
 const invoices = ref([]);
 const showCreateInvoiceModal = ref(false);
@@ -108,14 +109,6 @@ const paymentForm = ref({
   method: 'Bank Transfer',
   transaction_id: ''
 });
-
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-IN', { 
-        style: 'currency', 
-        currency: 'INR',
-        maximumFractionDigits: 0 
-    }).format(value);
-};
 
 const checkAndSetOverdue = async (invoice) => {
     if (invoice.status === 'Paid') return;
