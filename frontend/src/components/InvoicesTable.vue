@@ -268,7 +268,7 @@ const confirmPayment = async () => {
 };
 
 const viewInvoice = (invoice) => {
-  viewingInvoice.value = JSON.parse(JSON.stringify(invoice));
+  viewingInvoice.value = { ...invoice };
   showViewModal.value = true;
 };
 
