@@ -62,12 +62,19 @@
     <!-- ── Stat cards – CEO / HR ─────────────────────────── -->
     <div v-if="isCeoOrHr" class="stats-grid stats-grid--4">
       <div class="stat-card blue">
-        <div class="stat-label">Total Revenue</div>
+        <div class="stat-label">Gross Revenue</div>
         <div class="stat-value">{{ formatCurrency(dashboardStats.total_revenue) }}</div>
         <div class="stat-footer"><span class="up">+12.4%</span> vs last month</div>
         <div class="sparkline">
           <div v-for="(h, i) in revenueBars" :key="i" class="bar" :style="{ height: h + '%' }" />
         </div>
+        <div class="glow" />
+      </div>
+
+      <div class="stat-card green">
+        <div class="stat-label">Net Profit (Balance)</div>
+        <div class="stat-value">{{ formatCurrency(dashboardStats.current_balance) }}</div>
+        <div class="stat-footer"><span class="up">Gross - Spend</span></div>
         <div class="glow" />
       </div>
 

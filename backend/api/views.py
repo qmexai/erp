@@ -225,6 +225,29 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsManagerOrHigher]
+    
+    def get_queryset(self):
+        # Auto-update overdue invoices
+        from django.utils import timezone
+        today = timezone.now().date()
+        Invoice.objects.filter(status='Unpaid', due_date__lt=today).update(status='Overdue')
+        return Invoice.objects.all().select_related('project').prefetch_related('line_items').order_by('-issue_date')
+
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Created Invoice",
+            details=f"Invoice {invoice.invoice_number} for {invoice.project.name} created by {self.request.user.email}"
+        )
+
+    def perform_update(self, serializer):
+        invoice = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Invoice",
+            details=f"Invoice {invoice.invoice_number} updated by {self.request.user.email}"
+        )
 
     @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
@@ -530,6 +553,13 @@ class FirebaseLoginView(APIView):
 
             if not user.is_active:
                 return Response({"error": "Account is inactive"}, status=403)
+
+            # Log the login activity
+            ActivityLog.objects.create(
+                actor=user,
+                action="Logged In",
+                details=f"Secure User Login: {user.email}"
+            )
 
             # Return user data upon successful login
             return Response(UserSerializer(user).data)

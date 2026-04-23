@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Project, Meeting, LeaveRequest, FinancialRecord, Lead, ActivityLog
+from .models import User, Project, Meeting, LeaveRequest, FinancialRecord, Lead, ActivityLog, Task, Invoice, LineItem
 
 # --- 1. CUSTOM USER ADMIN ---
 # We use the decorator for the custom user to add the Qmexai fields
@@ -36,3 +36,6 @@ admin.site.register(LeaveRequest)
 admin.site.register(FinancialRecord)
 admin.site.register(Lead)
 admin.site.register(ActivityLog)
+admin.site.register(Task)
+admin.site.register(Invoice)
+admin.site.register(LineItem)

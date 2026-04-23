@@ -61,6 +61,56 @@
     <!-- Create Invoice Modal -->
     <CreateInvoiceModal v-if="showCreateInvoiceModal" @close="showCreateInvoiceModal = false" @invoice-created="handleInvoiceCreated" />
     
+    <!-- View/Edit Invoice Modal -->
+    <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-[500px] border border-[var(--qx-border)] shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-[var(--qx-text1)]">Invoice Details</h3>
+          <button @click="closeViewModal" class="text-gray-400 hover:text-white">&times;</button>
+        </div>
+        
+        <div class="space-y-4" v-if="viewingInvoice">
+          <div class="grid grid-cols-2 gap-4">
+             <div>
+               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Invoice #</label>
+               <div class="text-[var(--qx-text1)] font-mono">{{ viewingInvoice.invoice_number }}</div>
+             </div>
+             <div>
+               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Status</label>
+               <div class="text-[var(--qx-text1)] font-bold">{{ viewingInvoice.status }}</div>
+             </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Project</label>
+            <div class="text-[var(--qx-text1)]">{{ viewingInvoice.project_name }}</div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+             <div>
+               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Issue Date</label>
+               <input v-model="viewingInvoice.issue_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
+             </div>
+             <div>
+               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Due Date</label>
+               <input v-model="viewingInvoice.due_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
+             </div>
+          </div>
+          
+          <div class="mt-4 pt-4 border-t border-[var(--qx-border)]">
+             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Total Amount</label>
+             <div class="text-xl font-bold text-[var(--qx-green)]">{{ formatCurrency(viewingInvoice.total_amount) }}</div>
+             <div v-if="viewingInvoice.status === 'Paid'" class="mt-2 text-xs text-gray-400">Paid via: {{ viewingInvoice.payment_method }}<br>Txn ID: {{ viewingInvoice.transaction_id || 'N/A' }}</div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button @click="closeViewModal" class="px-4 py-2 bg-[var(--qx-bg3)] hover:bg-[var(--qx-bg4)] rounded text-sm text-[var(--qx-text2)] transition-colors">Close</button>
+          <button @click="saveInvoiceUpdates" :disabled="isSaving" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors disabled:opacity-50">
+             {{ isSaving ? 'Saving...' : 'Save Updates' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Payment Modal -->
     <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-96 border border-[var(--qx-border)] shadow-2xl">
@@ -101,7 +151,9 @@ import { formatCurrency } from '../utils/formatters';
 const invoices = ref([]);
 const showCreateInvoiceModal = ref(false);
 const showPaymentModal = ref(false);
+const showViewModal = ref(false);
 const selectedInvoice = ref(null);
+const viewingInvoice = ref(null);
 const previousStatus = ref('');
 const isSaving = ref(false);
 
@@ -216,8 +268,34 @@ const confirmPayment = async () => {
 };
 
 const viewInvoice = (invoice) => {
-  // Logic to view a single invoice
-  console.log('Viewing invoice:', invoice);
+  viewingInvoice.value = JSON.parse(JSON.stringify(invoice));
+  showViewModal.value = true;
+};
+
+const closeViewModal = () => {
+    showViewModal.value = false;
+    viewingInvoice.value = null;
+};
+
+const saveInvoiceUpdates = async () => {
+    if(!viewingInvoice.value) return;
+    isSaving.value = true;
+    try {
+        await api.patch(`/invoices/${viewingInvoice.value.id}/`, {
+            issue_date: viewingInvoice.value.issue_date,
+            due_date: viewingInvoice.value.due_date
+        });
+        
+        const idx = invoices.value.findIndex(i => i.id === viewingInvoice.value.id);
+        if (idx !== -1) invoices.value[idx] = { ...viewingInvoice.value };
+        
+        closeViewModal();
+    } catch(e) {
+        alert("Failed to update invoice");
+        console.error(e);
+    } finally {
+        isSaving.value = false;
+    }
 };
 
 onMounted(() => {

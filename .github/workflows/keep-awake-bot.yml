@@ -1,0 +1,19 @@
+name: Render Server Keep-Alive Bot
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier sleep (sleep happens at 15m)
+    - cron: "*/14 * * * *"
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend API
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://erp-e1ax.onrender.com/api/
+      
+      - name: Ping Frontend App
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://qmexaierp.netlify.app/

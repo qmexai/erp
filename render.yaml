@@ -1,0 +1,41 @@
+services:
+  # The Django Backend Web Service
+  - type: web
+    name: qmexai-erp-backend
+    env: docker
+    dockerContext: backend  # Directs render to use the backend/Dockerfile
+    dockerfilePath: Dockerfile
+    plan: free
+    healthCheckPath: /api/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qmexai-erp-db
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FIREBASE_JSON_DATA
+        sync: false  # You must upload the contents of your firebase json here via Render dashboard
+
+  # The Vue Frontend Static Site
+  - type: web
+    name: qmexai-erp-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: qmexai-erp-backend
+          property: host
+
+databases:
+  # The PostgreSQL Database
+  - name: qmexai-erp-db
+    databaseName: qmexai_erp
+    user: qmexai_user
+    plan: free
