@@ -96,6 +96,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         line_items_data = validated_data.pop('line_items_data', [])
         invoice = Invoice.objects.create(**validated_data)
         for item_data in line_items_data:
+            item_data.pop('id', None)
+            item_data.pop('total', None)
             LineItem.objects.create(invoice=invoice, **item_data)
         invoice.update_total_amount()
         return invoice
@@ -113,6 +115,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             # Delete old line items and create new ones
             instance.line_items.all().delete()
             for item_data in line_items_data:
+                item_data.pop('id', None)
+                item_data.pop('total', None)
                 LineItem.objects.create(invoice=instance, **item_data)
             instance.update_total_amount()
             

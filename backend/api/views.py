@@ -396,25 +396,28 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         story.append(header_table)
         story.append(Spacer(1, 25))
 
+        import html
+
         # 2. Billing & Metadata Box
         issue_date_str = invoice.issue_date.strftime('%B %d, %Y') if invoice.issue_date else 'N/A'
         due_date_str = invoice.due_date.strftime('%B %d, %Y') if invoice.due_date else 'N/A'
         
+        client_esc = html.escape(invoice.project.client)
         bill_to_text = f"<b>BILL TO:</b><br/>" \
-                       f"<font size='10.5'><b>{invoice.project.client}</b></font><br/>"
+                       f"<font size='10.5'><b>{client_esc}</b></font><br/>"
         if invoice.project.company:
-            bill_to_text += f"{invoice.project.company}<br/>"
+            bill_to_text += f"{html.escape(invoice.project.company)}<br/>"
         if invoice.project.phone:
-            bill_to_text += f"Phone: {invoice.project.phone}<br/>"
+            bill_to_text += f"Phone: {html.escape(invoice.project.phone)}<br/>"
         
         bill_to_para = Paragraph(bill_to_text, meta_val_style)
 
         details_text = f"<b>INVOICE DETAILS:</b><br/>" \
-                       f"<b>Project:</b> {invoice.project.name}<br/>" \
-                       f"<b>Invoice #:</b> {invoice.invoice_number}<br/>" \
-                       f"<b>Issue Date:</b> {issue_date_str}<br/>" \
-                       f"<b>Due Date:</b> {due_date_str}<br/>" \
-                       f"<b>Status:</b> <font color='#6366f1'><b>{invoice.status}</b></font>"
+                       f"<b>Project:</b> {html.escape(invoice.project.name)}<br/>" \
+                       f"<b>Invoice #:</b> {html.escape(invoice.invoice_number)}<br/>" \
+                       f"<b>Issue Date:</b> {html.escape(issue_date_str)}<br/>" \
+                       f"<b>Due Date:</b> {html.escape(due_date_str)}<br/>" \
+                       f"<b>Status:</b> <font color='#6366f1'><b>{html.escape(invoice.status)}</b></font>"
         details_para = Paragraph(details_text, meta_val_style)
 
         info_table = Table([[bill_to_para, details_para]], colWidths=[266, 266])
@@ -438,7 +441,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         for item in invoice.line_items.all():
             table_data.append([
-                Paragraph(item.description, td_style),
+                Paragraph(html.escape(item.description), td_style),
                 Paragraph(str(item.quantity), td_num_style),
                 Paragraph(f"INR {item.unit_price:,.2f}", td_num_style),
                 Paragraph(f"INR {item.total:,.2f}", td_num_style),
