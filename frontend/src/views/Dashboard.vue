@@ -41,7 +41,7 @@
     <!-- Page header -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">Good {{ timeOfDay }}, {{ auth.user?.first_name }}</h1>
+        <h1 class="page-title">Good {{ timeOfDay }}, {{ auth.user?.name || auth.user?.email || 'User' }}</h1>
         <div class="page-sub">
           <span>{{ todayLabel }}</span>
           <span class="status-chip">All systems operational</span>
@@ -494,7 +494,7 @@ function tempClass(lead) {
 .stats-grid {
   display: grid; gap: 12px; margin-bottom: 20px;
 }
-.stats-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.stats-grid--4 { grid-template-columns: repeat(5, 1fr); }
 .stats-grid--3 { grid-template-columns: repeat(3, 1fr); }
 
 .stat-card {
@@ -666,13 +666,16 @@ function tempClass(lead) {
 .empty { font-size: 13px; color: var(--qx-text3); font-style: italic; text-align: center; padding: 24px 0; }
 
 /* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .stats-grid--4 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1300px) {
+  .stats-grid--4 { grid-template-columns: repeat(3, 1fr); }
   .mid-grid      { grid-template-columns: 1fr; }
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .stats-grid--4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
   .stats-grid--4,
-  .stats-grid--3 { grid-template-columns: 1fr 1fr; }
+  .stats-grid--3 { grid-template-columns: 1fr; }
   .bot-grid      { grid-template-columns: 1fr; }
   .kban          { grid-template-columns: 1fr; }
 }

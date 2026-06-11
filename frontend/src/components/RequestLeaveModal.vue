@@ -81,6 +81,29 @@ const submitLeaveRequest = async () => {
     console.error("User not logged in");
     return;
   }
+  
+  try {
+    const meetingsRes = await api.get('/meetings/');
+    const myMeetings = meetingsRes.data;
+    
+    if (leaveRequest.value.start_date && leaveRequest.value.end_date) {
+        const leaveStart = new Date(leaveRequest.value.start_date).getTime();
+        const leaveEnd = new Date(leaveRequest.value.end_date).getTime() + 86400000; // End of the day
+        
+        const conflictingMeetings = myMeetings.filter(m => {
+            const mTime = new Date(m.start_time).getTime();
+            return mTime >= leaveStart && mTime <= leaveEnd;
+        });
+        
+        if (conflictingMeetings.length > 0) {
+            const confirmed = confirm(`You have ${conflictingMeetings.length} meeting(s) scheduled during this leave period. Do you still want to apply for leave?`);
+            if (!confirmed) return;
+        }
+    }
+  } catch (error) {
+    console.error('Error fetching meetings to check conflicts:', error);
+  }
+
   try {
     const response = await api.post('/leave-requests/', {
       ...leaveRequest.value,

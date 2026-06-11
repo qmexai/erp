@@ -2,13 +2,17 @@ import os
 import dj_database_url
 import json
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load local .env if present
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
 # --- SECURITY ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-this-in-prod')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Dynamic ALLOWED_HOSTS
 ALLOWED_HOSTS = ['*'] if DEBUG else [
@@ -69,7 +73,7 @@ WSGI_APPLICATION = 'erp_core.wsgi.application'
 # --- DATABASE ---
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/qmexai_db'),
+        default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgrespassword@localhost:5433/qmexai_db'),
         conn_max_age=600
     )
 }
@@ -94,6 +98,12 @@ if not DEBUG:
         "https://api.qmexai.com",
         "https://erp-e1ax.onrender.com"
     ]
+
+    # Dynamic Render Host Support
+    render_external_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+    if render_external_hostname:
+        ALLOWED_HOSTS.append(render_external_hostname)
+        CSRF_TRUSTED_ORIGINS.append(f"https://{render_external_hostname}")
 
 # --- PRODUCTION SECURITY ---
 if not DEBUG:

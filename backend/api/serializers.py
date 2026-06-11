@@ -2,9 +2,11 @@ from rest_framework import serializers
 from .models import Lead, Project, FinancialRecord, LeaveRequest, Meeting, Task, User, Invoice, LineItem, ActivityLog
 
 class UserSerializer(serializers.ModelSerializer):
+    name = serializers.ReadOnlyField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'uid']
+        fields = ['id', 'email', 'first_name', 'last_name', 'name', 'role', 'uid', 'department']
 
 class LeadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,15 +28,15 @@ class ProjectSerializer(serializers.ModelSerializer):
         ]
 
 class FinancialRecordSerializer(serializers.ModelSerializer):
-    added_by_username = serializers.ReadOnlyField(source='added_by.username')
+    added_by_name = serializers.ReadOnlyField(source='added_by.name')
 
     class Meta:
         model = FinancialRecord
-        fields = ['id', 'type', 'amount', 'category', 'description', 'date', 'added_by', 'added_by_username']
+        fields = ['id', 'type', 'amount', 'category', 'description', 'date', 'added_by', 'added_by_name']
         read_only_fields = ('added_by',)
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
-    employee_name = serializers.ReadOnlyField(source='employee.first_name')
+    employee_name = serializers.ReadOnlyField(source='employee.name')
     employee_email = serializers.ReadOnlyField(source='employee.email')
 
     class Meta:
@@ -91,15 +93,33 @@ class InvoiceSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop('line_items_data')
+        line_items_data = validated_data.pop('line_items_data', [])
         invoice = Invoice.objects.create(**validated_data)
         for item_data in line_items_data:
             LineItem.objects.create(invoice=invoice, **item_data)
         invoice.update_total_amount()
         return invoice
 
+    def update(self, instance, validated_data):
+        line_items_data = validated_data.pop('line_items_data', None)
+        
+        # Update invoice fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # If line items were provided, update them
+        if line_items_data is not None:
+            # Delete old line items and create new ones
+            instance.line_items.all().delete()
+            for item_data in line_items_data:
+                LineItem.objects.create(invoice=instance, **item_data)
+            instance.update_total_amount()
+            
+        return instance
+
 class ActivityLogSerializer(serializers.ModelSerializer):
-    actor_name = serializers.CharField(source='actor.username', read_only=True)
+    actor_name = serializers.CharField(source='actor.name', read_only=True)
 
     class Meta:
         model = ActivityLog

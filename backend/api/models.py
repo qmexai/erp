@@ -51,7 +51,14 @@ class User(AbstractUser):
     )
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Employee')
+    department = models.CharField(max_length=100, blank=True, null=True)
     last_activity = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def name(self):
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.email.split('@')[0]
 
     # Use email as the username field
     USERNAME_FIELD = 'email'
@@ -207,7 +214,7 @@ class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.actor.username} - {self.action} at {self.timestamp}"
+        return f"{self.actor.email} - {self.action} at {self.timestamp}"
 
 
 class Lead(models.Model):
@@ -260,4 +267,4 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.assigned_to.username}"
+        return f"{self.title} - {self.assigned_to.email}"

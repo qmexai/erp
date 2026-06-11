@@ -64,16 +64,17 @@
       </table>
     </div>
 
-    <!-- Add Task Modal -->
-    <AddTaskModal 
-      v-if="showAddTaskModal"
-      :show="showAddTaskModal" 
-      :users="users"
-      :projects="projects"
-      @close="showAddTaskModal = false" 
-      @task-added="handleTaskAdded" 
-    />
   </div>
+
+  <!-- Add Task Modal -->
+  <AddTaskModal 
+    v-if="showAddTaskModal"
+    :show="showAddTaskModal" 
+    :users="users"
+    :projects="projects"
+    @close="showAddTaskModal = false" 
+    @task-added="handleTaskAdded" 
+  />
 </template>
 
 <script setup>

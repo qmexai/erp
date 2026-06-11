@@ -52,21 +52,21 @@
             <td>{{ lead.field }}</td>
             <td class="mono">{{ lead.phone_number }}</td>
             <td>
-              <span
-                :class="[
-                  'badge',
-                  lead.status === 'Closed' ? 'closed' :
-                  lead.status === 'Open' ? 'active' :
-                  lead.status === 'Not Interested' ? 'leave' : 'pending'
-                ]"
+              <select 
+                v-model="lead.status" 
+                @change="handleStatusChange(lead)" 
+                class="status-select"
+                :class="{
+                  'status-open': lead.status === 'Open',
+                  'status-closed': lead.status === 'Closed',
+                  'status-notstarted': lead.status === 'Not Started',
+                  'status-notinterested': lead.status === 'Not Interested'
+                }"
               >
-                {{ lead.status }}
-              </span>
-              <select v-model="lead.status" @change="handleStatusChange(lead)" class="ml-2 bg-[var(--qx-bg1)] border border-[var(--qx-border)] text-[var(--qx-text1)] rounded px-1 text-[11px] outline-none">
-                <option value="Not Started">Not Started</option>
-                <option value="Open">Open</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Closed">Closed</option>
+                <option value="Not Started" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Not Started</option>
+                <option value="Open" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Open</option>
+                <option value="Not Interested" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Not Interested</option>
+                <option value="Closed" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Closed</option>
               </select>
             </td>
             <td>{{ (lead.services_needed || []).join(', ') || '—' }}</td>
@@ -81,64 +81,64 @@
         </tbody>
       </table>
     </div>
+  </div>
 
-    <!-- Edit Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeEditModal">
-      <div class="bg-[var(--qx-bg1)] border border-[var(--qx-border)] w-full max-w-lg shadow-2xl rounded-2xl p-6">
-        <h3 class="text-lg font-bold text-[var(--qx-text1)] mb-5 flex items-center gap-2">
-          <span class="accent amber"></span>
-          Update Lead
-        </h3>
-        <form @submit.prevent="updateLead" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Client Name</label>
-              <input v-model="editingLead.client_name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Company Name</label>
-              <input v-model="editingLead.company_name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Field</label>
-              <input v-model="editingLead.field" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" placeholder="e.g. Dental Clinic">
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Phone Number</label>
-              <input v-model="editingLead.phone_number" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
-            </div>
+  <!-- Edit Modal -->
+  <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeEditModal">
+    <div class="bg-[var(--qx-bg1)] border border-[var(--qx-border)] w-full max-w-lg shadow-2xl rounded-2xl p-6">
+      <h3 class="text-lg font-bold text-[var(--qx-text1)] mb-5 flex items-center gap-2">
+        <span class="accent amber"></span>
+        Update Lead
+      </h3>
+      <form @submit.prevent="updateLead" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Client Name</label>
+            <input v-model="editingLead.client_name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
           </div>
           <div>
-            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Address</label>
-            <input v-model="editingLead.address" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Company Name</label>
+            <input v-model="editingLead.company_name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Status</label>
-              <select v-model="editingLead.status" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none text-[13px]">
-                <option value="Not Started">Not Started</option>
-                <option value="Open">Open</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Closed">Closed</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Services Needed (comma-separated)</label>
-              <input v-model="editingLead.services_needed_string" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" placeholder="e.g. Web Dev, SEO">
-            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Field</label>
+            <input v-model="editingLead.field" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" placeholder="e.g. Dental Clinic">
           </div>
           <div>
-            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Notes</label>
-            <textarea v-model="editingLead.notes" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" rows="3"></textarea>
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Phone Number</label>
+            <input v-model="editingLead.phone_number" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
           </div>
-          <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-[var(--qx-border)]">
-            <button type="button" @click="closeEditModal" class="px-4 py-1.5 bg-[var(--qx-bg2)] text-[var(--qx-text2)] rounded hover:bg-[var(--qx-bg3)] transition-colors text-[13px] font-medium">Cancel</button>
-            <button type="submit" class="px-4 py-1.5 bg-[var(--qx-amber-d)] text-[var(--qx-amber)] font-medium rounded hover:bg-[var(--qx-amber)] hover:text-black transition-colors text-[13px]">Save Changes</button>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Address</label>
+          <input v-model="editingLead.address" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Status</label>
+            <select v-model="editingLead.status" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none text-[13px]">
+              <option value="Not Started">Not Started</option>
+              <option value="Open">Open</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Closed">Closed</option>
+            </select>
           </div>
-        </form>
-      </div>
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Services Needed (comma-separated)</label>
+            <input v-model="editingLead.services_needed_string" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" placeholder="e.g. Web Dev, SEO">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--qx-text3)] uppercase tracking-wider mb-1.5">Notes</label>
+          <textarea v-model="editingLead.notes" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-[var(--qx-text1)] focus:outline-none focus:border-[var(--qx-amber)] text-[13px]" rows="3"></textarea>
+        </div>
+        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-[var(--qx-border)]">
+          <button type="button" @click="closeEditModal" class="px-4 py-1.5 bg-[var(--qx-bg2)] text-[var(--qx-text2)] rounded hover:bg-[var(--qx-bg3)] transition-colors text-[13px] font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 bg-[var(--qx-amber-d)] text-[var(--qx-amber)] font-medium rounded hover:bg-[var(--qx-amber)] hover:text-black transition-colors text-[13px]">Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

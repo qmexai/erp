@@ -32,7 +32,10 @@
             <div class="w-full h-48 bg-black/40 border border-white/10 rounded-xl p-3 text-white overflow-y-auto">
               <div v-for="user in users" :key="user.id" class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-colors">
                 <input type="checkbox" :id="'user-' + user.id" :value="user.id" v-model="meeting.participants" class="form-checkbox h-5 w-5 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
-                <label :for="'user-' + user.id" class="text-sm">{{ user.email }}</label>
+                <label :for="'user-' + user.id" class="text-sm flex items-center gap-2">
+                  {{ user.email }}
+                  <span v-if="isUserOnLeave(user.id)" class="px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 font-bold uppercase tracking-widest">On Leave</span>
+                </label>
               </div>
             </div>
           </div>
@@ -59,6 +62,8 @@ import api from '../api';
 const emit = defineEmits(['close', 'meeting-created']);
 
 const users = ref([]);
+const leaves = ref([]);
+
 const meeting = ref({
   title: '',
   agenda: '',
@@ -70,12 +75,31 @@ const isSubmitting = ref(false);
 
 onMounted(async () => {
   try {
-    const response = await api.get('/users/');
-    users.value = response.data;
+    const [usersRes, leavesRes] = await Promise.all([
+        api.get('/users/'),
+        api.get('/leave-requests/')
+    ]);
+    users.value = usersRes.data;
+    // Only care about approved leaves
+    leaves.value = leavesRes.data.filter(l => l.status === 'Approved');
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error fetching data:', error);
   }
 });
+
+const isUserOnLeave = (userId) => {
+    if (!meeting.value.start_time) return false;
+    const mTime = new Date(meeting.value.start_time).getTime();
+    
+    return leaves.value.some(l => {
+        const empId = typeof l.employee === 'object' ? l.employee.id : l.employee;
+        if (empId !== userId) return false;
+        
+        const lStart = new Date(l.start_date).getTime();
+        const lEnd = new Date(l.end_date).getTime() + 86400000; // End of the day
+        return mTime >= lStart && mTime <= lEnd;
+    });
+};
 
 const submitMeeting = async () => {
   isSubmitting.value = true;

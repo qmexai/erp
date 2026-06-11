@@ -26,20 +26,18 @@ class FirebaseAuthentication(BaseAuthentication):
                 raise AuthenticationFailed('No email found in Firebase token.')
 
             try:
-                user, created = User.objects.get_or_create(email=email)
-                if created:
-                    user.uid = uid  # Store the Firebase UID during creation
+                user = User.objects.get(email=email)
+                # Update uid if it's blank but we have a valid uid from Firebase
+                if uid and not user.uid:
+                    user.uid = uid
                     user.save()
-                    logger.info(f"AUTH: New user created for email {email} from Firebase token.")
-                else:
-                    # Update uid if it's blank but we have a valid uid from Firebase
-                    if uid and not user.uid:
-                        user.uid = uid
-                        user.save()
-                    logger.info(f"AUTH: User '{user.email}' authenticated successfully via Firebase.")
+                logger.info(f"AUTH: User '{user.email}' authenticated successfully via Firebase.")
                 return (user, None)
+            except User.DoesNotExist:
+                logger.warning(f"AUTH: User record not found for email {email} in Django database.")
+                raise AuthenticationFailed('Account does not exist in ERP database.')
             except Exception as e:
-                logger.error(f"AUTH: An unexpected error occurred during user retrieval/creation: {e}")
+                logger.error(f"AUTH: An unexpected error occurred during user retrieval: {e}")
                 raise AuthenticationFailed('Authentication failed due to an internal database error.')
 
         except firebase_auth.InvalidIdTokenError as e:

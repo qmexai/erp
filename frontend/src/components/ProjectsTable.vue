@@ -34,14 +34,19 @@
               <select 
                 v-model="project.status" 
                 @change="updateProjectStatus(project, $event.target.value)"
-                class="bg-[var(--qx-bg1)] border border-[var(--qx-border)] text-[var(--qx-text1)] rounded px-1 py-0.5 text-[11px] outline-none"
-                :class="getStatusClass(project.status)"
+                class="status-select"
+                :class="{
+                  'status-active-lead': project.status === 'Active',
+                  'status-completed': project.status === 'Completed' || project.status === 'Deployed',
+                  'status-onhold': project.status === 'On Hold',
+                  'status-notstarted': project.status === 'Not Started'
+                }"
               >
-                <option value="Not Started">Not Started</option>
-                <option value="Active">Active</option>
-                <option value="On Hold">On Hold</option>
-                <option value="Completed">Completed</option>
-                <option value="Deployed">Deployed</option>
+                <option value="Not Started" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Not Started</option>
+                <option value="Active" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Active</option>
+                <option value="On Hold" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">On Hold</option>
+                <option value="Completed" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Completed</option>
+                <option value="Deployed" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Deployed</option>
               </select>
             </td>
             <td>
@@ -68,58 +73,59 @@
       </table>
     </div>
 
-    <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeEditModal">
-      <div class="bg-[var(--qx-bg1)] border border-[var(--qx-border)] w-full max-w-lg shadow-2xl rounded-2xl p-6">
-        <h3 class="text-lg font-bold text-[var(--qx-text1)] mb-5 flex items-center gap-2">
-          <span class="accent blue"></span> Update Project
-        </h3>
-        <form @submit.prevent="updateProject" class="space-y-4">
+  </div>
+
+  <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeEditModal">
+    <div class="bg-[var(--qx-bg1)] border border-[var(--qx-border)] w-full max-w-lg shadow-2xl rounded-2xl p-6">
+      <h3 class="text-lg font-bold text-[var(--qx-text1)] mb-5 flex items-center gap-2">
+        <span class="accent blue"></span> Update Project
+      </h3>
+      <form @submit.prevent="updateProject" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Project Name</label>
+          <input v-model="editingProject.name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Project Name</label>
-            <input v-model="editingProject.name" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Client</label>
-              <input v-model="editingProject.client" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Company</label>
-              <input v-model="editingProject.company" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
-            </div>
+            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Client</label>
+            <input v-model="editingProject.client" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
           </div>
           <div>
-            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Phone Number</label>
-            <input v-model="editingProject.phone" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Company</label>
+            <input v-model="editingProject.company" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Phone Number</label>
+          <input v-model="editingProject.phone" type="text" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Description</label>
+          <textarea v-model="editingProject.description" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]" rows="3"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Status</label>
+            <select v-model="editingProject.status" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
+              <option value="Not Started">Not Started</option>
+              <option value="Active">Active</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+              <option value="Deployed">Deployed</option>
+            </select>
           </div>
           <div>
-            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Description</label>
-            <textarea v-model="editingProject.description" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]" rows="3"></textarea>
+            <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Assign Team</label>
+            <select multiple v-model="editingProject.assigned_to" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white h-24 text-[13px]">
+              <option v-for="user in allUsers" :key="user.id" :value="user.id">{{ user.email }}</option>
+            </select>
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Status</label>
-              <select v-model="editingProject.status" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white text-[13px]">
-                <option value="Not Started">Not Started</option>
-                <option value="Active">Active</option>
-                <option value="On Hold">On Hold</option>
-                <option value="Completed">Completed</option>
-                <option value="Deployed">Deployed</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-500 uppercase mb-1">Assign Team</label>
-              <select multiple v-model="editingProject.assigned_to" class="w-full bg-[var(--qx-bg2)] border border-[var(--qx-border)] rounded-lg py-2 px-3 text-white h-24 text-[13px]">
-                <option v-for="user in allUsers" :key="user.id" :value="user.id">{{ user.email }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-white/5">
-            <button type="button" @click="closeEditModal" class="px-4 py-2 text-slate-400 text-sm">Cancel</button>
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors">Save Changes</button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-white/5">
+          <button type="button" @click="closeEditModal" class="px-4 py-2 text-slate-400 text-sm">Cancel</button>
+          <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors">Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

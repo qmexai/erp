@@ -16,7 +16,7 @@ class Command(BaseCommand):
         try:
             # Find the user in Django's database
             user = User.objects.get(email=email)
-            self.stdout.write(self.style.SUCCESS(f"Found Django user: {user.username}"))
+            self.stdout.write(self.style.SUCCESS(f"Found Django user: {user.email}"))
         except User.DoesNotExist:
             raise CommandError(f"User with email {email} does not exist in the Django database.")
 
@@ -28,10 +28,10 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError(f"Could not find user in Firebase with email {email}. Error: {e}")
 
-        # Update the firebase_uid in the Django user model
-        if user.firebase_uid == firebase_uid:
+        # Update the uid in the Django user model
+        if user.uid == firebase_uid:
             self.stdout.write(self.style.WARNING(f"User {email} is already in sync."))
         else:
-            user.firebase_uid = firebase_uid
+            user.uid = firebase_uid
             user.save()
-            self.stdout.write(self.style.SUCCESS(f"Successfully synced Django user {user.username} with Firebase UID {firebase_uid}."))
+            self.stdout.write(self.style.SUCCESS(f"Successfully synced Django user {user.email} with Firebase UID {firebase_uid}."))

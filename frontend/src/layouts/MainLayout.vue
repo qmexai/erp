@@ -45,7 +45,7 @@
         <div class="sidebar-user">
           <div class="user-avatar">{{ userInitials }}</div>
           <div class="user-info">
-            <div class="user-name">{{ auth.user?.first_name }} {{ auth.user?.last_name }}</div>
+            <div class="user-name">{{ auth.user?.name || auth.user?.email }}</div>
             <div class="user-role">{{ auth.user?.role }}</div>
           </div>
           <button class="logout-btn" title="Logout" @click="handleLogout">
@@ -97,7 +97,7 @@
           <div class="topbar-user">
             <div class="topbar-avatar">{{ userInitials }}</div>
             <div class="topbar-user-info">
-              <div class="topbar-name">{{ auth.user?.first_name || 'User' }}</div>
+              <div class="topbar-name">{{ auth.user?.name || auth.user?.email || 'User' }}</div>
               <div class="topbar-role">{{ auth.user?.role }}</div>
             </div>
           </div>
@@ -197,31 +197,31 @@ function handleLogout() {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ── Global CSS vars injected at root so SidebarItem.vue can use them ── */
 :root {
-  --qx-bg0:     #0a0a0c;
-  --qx-bg1:     #111115;
-  --qx-bg2:     #18181e;
-  --qx-bg3:     #1f1f27;
-  --qx-border:  #ffffff0f;
-  --qx-border2: #ffffff18;
-  --qx-border3: #ffffff28;
-  --qx-text1:   #f0f0f4;
-  --qx-text2:   #8c8c9e;
-  --qx-text3:   #55556a;
-  --qx-blue:    #4f8ef7;
-  --qx-blue-d:  #4f8ef714;
-  --qx-blue-g:  #4f8ef728;
-  --qx-green:   #34d399;
-  --qx-green-d: #34d39918;
+  --qx-bg0:     #070709;
+  --qx-bg1:     #0f0f16;
+  --qx-bg2:     #171722;
+  --qx-bg3:     #1f1f2e;
+  --qx-border:  rgba(255, 255, 255, 0.05);
+  --qx-border2: rgba(255, 255, 255, 0.09);
+  --qx-border3: rgba(255, 255, 255, 0.16);
+  --qx-text1:   #f8fafc;
+  --qx-text2:   #94a3b8;
+  --qx-text3:   #64748b;
+  --qx-blue:    #6366f1;
+  --qx-blue-d:  rgba(99, 102, 241, 0.12);
+  --qx-blue-g:  rgba(99, 102, 241, 0.24);
+  --qx-green:   #10b981;
+  --qx-green-d: rgba(16, 185, 129, 0.12);
   --qx-amber:   #f59e0b;
-  --qx-amber-d: #f59e0b18;
-  --qx-red:     #f87171;
-  --qx-red-d:   #f8717118;
-  --qx-violet:  #a78bfa;
-  --qx-violet-d:#a78bfa18;
+  --qx-amber-d: rgba(245, 158, 11, 0.12);
+  --qx-red:     #f43f5e;
+  --qx-red-d:   rgba(244, 63, 94, 0.12);
+  --qx-violet:  #a855f7;
+  --qx-violet-d:rgba(168, 85, 247, 0.12);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -229,7 +229,7 @@ function handleLogout() {
 body {
   background: var(--qx-bg0);
   color: var(--qx-text1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }

@@ -33,11 +33,11 @@
               <select 
                 v-model="invoice.status" 
                 @change="handleStatusChange(invoice, $event)"
-                class="px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer outline-none transition-colors border"
+                class="status-select"
                 :class="{
-                  'bg-green-500/10 text-green-400 border-green-500/20': invoice.status === 'Paid',
-                  'bg-yellow-500/10 text-yellow-400 border-yellow-500/20': invoice.status === 'Unpaid' || invoice.status === 'Draft' || invoice.status === 'Sent',
-                  'bg-red-500/10 text-red-400 border-red-500/20': invoice.status === 'Overdue'
+                  'status-paid': invoice.status === 'Paid',
+                  'status-unpaid': invoice.status === 'Unpaid' || invoice.status === 'Draft' || invoice.status === 'Sent',
+                  'status-overdue': invoice.status === 'Overdue'
                 }"
               >
                 <option value="Draft" class="bg-[var(--qx-bg1)] text-[var(--qx-text1)]">Draft</option>
@@ -58,85 +58,87 @@
       </table>
     </div>
 
-    <!-- Create Invoice Modal -->
-    <CreateInvoiceModal v-if="showCreateInvoiceModal" @close="showCreateInvoiceModal = false" @invoice-created="handleInvoiceCreated" />
-    
-    <!-- View/Edit Invoice Modal -->
-    <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-[500px] border border-[var(--qx-border)] shadow-2xl">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-bold text-[var(--qx-text1)]">Invoice Details</h3>
-          <button @click="closeViewModal" class="text-gray-400 hover:text-white">&times;</button>
+  </div>
+
+  <!-- Create Invoice Modal -->
+  <CreateInvoiceModal v-if="showCreateInvoiceModal" @close="showCreateInvoiceModal = false" @invoice-created="handleInvoiceCreated" />
+  
+  <!-- View/Edit Invoice Modal -->
+  <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-[500px] border border-[var(--qx-border)] shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-[var(--qx-text1)]">Invoice Details</h3>
+        <button @click="closeViewModal" class="text-gray-400 hover:text-white">&times;</button>
+      </div>
+      
+      <div class="space-y-4" v-if="viewingInvoice">
+        <div class="grid grid-cols-2 gap-4">
+           <div>
+             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Invoice #</label>
+             <div class="text-[var(--qx-text1)] font-mono">{{ viewingInvoice.invoice_number }}</div>
+           </div>
+           <div>
+             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Status</label>
+             <div class="text-[var(--qx-text1)] font-bold">{{ viewingInvoice.status }}</div>
+           </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Project</label>
+          <div class="text-[var(--qx-text1)]">{{ viewingInvoice.project_name }}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+           <div>
+             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Issue Date</label>
+             <input v-model="viewingInvoice.issue_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
+           </div>
+           <div>
+             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Due Date</label>
+             <input v-model="viewingInvoice.due_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
+           </div>
         </div>
         
-        <div class="space-y-4" v-if="viewingInvoice">
-          <div class="grid grid-cols-2 gap-4">
-             <div>
-               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Invoice #</label>
-               <div class="text-[var(--qx-text1)] font-mono">{{ viewingInvoice.invoice_number }}</div>
-             </div>
-             <div>
-               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Status</label>
-               <div class="text-[var(--qx-text1)] font-bold">{{ viewingInvoice.status }}</div>
-             </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Project</label>
-            <div class="text-[var(--qx-text1)]">{{ viewingInvoice.project_name }}</div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-             <div>
-               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Issue Date</label>
-               <input v-model="viewingInvoice.issue_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
-             </div>
-             <div>
-               <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Due Date</label>
-               <input v-model="viewingInvoice.due_date" type="date" class="w-full px-2 py-1 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm" />
-             </div>
-          </div>
-          
-          <div class="mt-4 pt-4 border-t border-[var(--qx-border)]">
-             <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Total Amount</label>
-             <div class="text-xl font-bold text-[var(--qx-green)]">{{ formatCurrency(viewingInvoice.total_amount) }}</div>
-             <div v-if="viewingInvoice.status === 'Paid'" class="mt-2 text-xs text-gray-400">Paid via: {{ viewingInvoice.payment_method }}<br>Txn ID: {{ viewingInvoice.transaction_id || 'N/A' }}</div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 mt-6">
-          <button @click="closeViewModal" class="px-4 py-2 bg-[var(--qx-bg3)] hover:bg-[var(--qx-bg4)] rounded text-sm text-[var(--qx-text2)] transition-colors">Close</button>
-          <button @click="saveInvoiceUpdates" :disabled="isSaving" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors disabled:opacity-50">
-             {{ isSaving ? 'Saving...' : 'Save Updates' }}
-          </button>
+        <div class="mt-4 pt-4 border-t border-[var(--qx-border)]">
+           <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase">Total Amount</label>
+           <div class="text-xl font-bold text-[var(--qx-green)]">{{ formatCurrency(viewingInvoice.total_amount) }}</div>
+           <div v-if="viewingInvoice.status === 'Paid'" class="mt-2 text-xs text-gray-400">Paid via: {{ viewingInvoice.payment_method }}<br>Txn ID: {{ viewingInvoice.transaction_id || 'N/A' }}</div>
         </div>
       </div>
-    </div>
 
-    <!-- Payment Modal -->
-    <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-96 border border-[var(--qx-border)] shadow-2xl">
-        <h3 class="text-lg font-bold mb-4 text-[var(--qx-text1)]">Record Payment</h3>
-        <p class="text-xs text-[var(--qx-text3)] mb-4">Invoice: <span class="font-mono">{{ selectedInvoice?.invoice_number }}</span></p>
-        
-        <div class="mb-4">
-          <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase tracking-wide">Payment Method</label>
-          <select v-model="paymentForm.method" class="w-full px-3 py-2 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm">
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="UPI">UPI</option>
-            <option value="Cash">Cash</option>
-            <option value="Credit Card">Credit Card</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="mb-8">
-          <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase tracking-wide">Transaction ID</label>
-          <input v-model="paymentForm.transaction_id" type="text" class="w-full px-3 py-2 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm font-mono placeholder:font-sans" placeholder="Enter Txn ID" />
-        </div>
-        <div class="flex justify-end gap-3">
-          <button @click="cancelPayment" class="px-4 py-2 bg-[var(--qx-bg3)] hover:bg-[var(--qx-bg4)] rounded text-sm text-[var(--qx-text2)] transition-colors">Cancel</button>
-          <button @click="confirmPayment" :disabled="isSaving" class="px-4 py-2 bg-[var(--qx-green-d)] hover:bg-[var(--qx-green)] text-[var(--qx-green)] hover:text-white rounded text-sm font-medium transition-colors disabled:opacity-50">
-             {{ isSaving ? 'Saving...' : 'Save Payment' }}
-          </button>
-        </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button @click="downloadInvoice(viewingInvoice.id)" class="px-4 py-2 bg-[var(--qx-green-d)] hover:bg-[var(--qx-green)] text-[var(--qx-green)] hover:text-white rounded text-sm font-medium transition-colors">Download PDF</button>
+        <button @click="closeViewModal" class="px-4 py-2 bg-[var(--qx-bg3)] hover:bg-[var(--qx-bg4)] rounded text-sm text-[var(--qx-text2)] transition-colors">Close</button>
+        <button @click="saveInvoiceUpdates" :disabled="isSaving" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors disabled:opacity-50">
+           {{ isSaving ? 'Saving...' : 'Save Updates' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal -->
+  <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-[var(--qx-bg1)] p-6 rounded-xl w-96 border border-[var(--qx-border)] shadow-2xl">
+      <h3 class="text-lg font-bold mb-4 text-[var(--qx-text1)]">Record Payment</h3>
+      <p class="text-xs text-[var(--qx-text3)] mb-4">Invoice: <span class="font-mono">{{ selectedInvoice?.invoice_number }}</span></p>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase tracking-wide">Payment Method</label>
+        <select v-model="paymentForm.method" class="w-full px-3 py-2 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm">
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="UPI">UPI</option>
+          <option value="Cash">Cash</option>
+          <option value="Credit Card">Credit Card</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="mb-8">
+        <label class="block text-xs font-semibold mb-1 text-[var(--qx-text2)] uppercase tracking-wide">Transaction ID</label>
+        <input v-model="paymentForm.transaction_id" type="text" class="w-full px-3 py-2 rounded bg-[var(--qx-bg2)] border border-[var(--qx-border)] focus:border-[var(--qx-green)] focus:outline-none text-[var(--qx-text1)] text-sm font-mono placeholder:font-sans" placeholder="Enter Txn ID" />
+      </div>
+      <div class="flex justify-end gap-3">
+        <button @click="cancelPayment" class="px-4 py-2 bg-[var(--qx-bg3)] hover:bg-[var(--qx-bg4)] rounded text-sm text-[var(--qx-text2)] transition-colors">Cancel</button>
+        <button @click="confirmPayment" :disabled="isSaving" class="px-4 py-2 bg-[var(--qx-green-d)] hover:bg-[var(--qx-green)] text-[var(--qx-green)] hover:text-white rounded text-sm font-medium transition-colors disabled:opacity-50">
+           {{ isSaving ? 'Saving...' : 'Save Payment' }}
+        </button>
       </div>
     </div>
   </div>
@@ -295,6 +297,22 @@ const saveInvoiceUpdates = async () => {
         console.error(e);
     } finally {
         isSaving.value = false;
+    }
+};
+
+const downloadInvoice = async (invoiceId) => {
+    try {
+        const response = await api.get(`/invoices/${invoiceId}/download-pdf/`, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Invoice-${invoiceId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch(e) {
+        alert("Failed to download invoice PDF.");
+        console.error(e);
     }
 };
 
