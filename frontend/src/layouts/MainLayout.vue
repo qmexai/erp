@@ -327,10 +327,12 @@ body {
   gap: 9px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--qx-bg1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%), var(--qx-bg1);
   border: 1px solid var(--qx-border);
   margin-top: 2px;
+  transition: border-color .15s, background .15s;
 }
+.sidebar-user:hover { border-color: var(--qx-border2); }
 .user-avatar {
   width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(135deg, #4f8ef7, #a78bfa);
@@ -400,19 +402,43 @@ body {
 .topbar-user {
   display: flex; align-items: center; gap: 9px;
   padding: 5px 10px 5px 5px;
-  background: var(--qx-bg2); border: 1px solid var(--qx-border2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%), var(--qx-bg2);
+  border: 1px solid var(--qx-border2);
   border-radius: 10px; cursor: pointer;
-  transition: border-color .15s;
+  transition: border-color .15s, box-shadow .15s;
 }
-.topbar-user:hover { border-color: var(--qx-border3); }
+.topbar-user:hover {
+  border-color: var(--qx-border3);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.25);
+}
+.topbar-user-info { min-width: 0; }
 .topbar-avatar {
   width: 26px; height: 26px; border-radius: 50%;
   background: linear-gradient(135deg, #4f8ef7, #a78bfa);
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 700; color: #fff;
 }
-.topbar-name { font-size: 12px; font-weight: 500; color: var(--qx-text1); line-height: 1.2; }
-.topbar-role { font-size: 10px; color: var(--qx-blue); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; }
+.topbar-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--qx-text1);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.topbar-role {
+  font-size: 10px;
+  color: var(--qx-blue);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
 
 /* ── Page content ────────────────────────────────────────── */
 .qx-page {
@@ -455,5 +481,7 @@ body {
   .mobile-menu-btn { display: flex; }
   .qx-page        { padding: 16px; }
   .topbar-title   { font-size: 12px; }
+  .topbar-user-info { display: none; }
+  .topbar-user { padding-right: 5px; }
 }
 </style>

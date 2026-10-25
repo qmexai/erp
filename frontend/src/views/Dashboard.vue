@@ -223,7 +223,7 @@
     </div>
 
     <!-- ── Tasks + Calendar ──────────────────────────────── -->
-    <div class="bot-grid" style="margin-top: 16px">
+    <div class="bot-grid section-spaced">
       <div class="panel">
         <div class="panel-hd"><div class="panel-title"><span class="accent violet" />Tasks</div></div>
         <div class="panel-bd"><TasksTable /></div>
@@ -235,7 +235,7 @@
     </div>
 
     <!-- ── Staff management — CEO / HR ──────────────────── -->
-    <div v-if="isCeoOrHr" class="panel" style="margin-top: 16px">
+    <div v-if="isCeoOrHr" class="panel section-spaced">
       <div class="panel-hd">
         <div class="panel-title"><span class="accent blue" />Staff management</div>
       </div>
@@ -244,14 +244,14 @@
 
     <!-- ── Leads + Projects tables — CEO / HR ───────────── -->
     <template v-if="isCeoOrHr">
-      <div class="panel" style="margin-top: 16px">
+      <div class="panel section-spaced">
         <div class="panel-hd">
           <div class="panel-title"><span class="accent amber" />All leads</div>
           <button class="panel-btn">Export</button>
         </div>
         <div class="panel-bd"><LeadsTable :leads="leads" /></div>
       </div>
-      <div class="panel" style="margin-top: 16px">
+      <div class="panel section-spaced">
         <div class="panel-hd">
           <div class="panel-title"><span class="accent green" />All projects</div>
           <button class="panel-btn">Export</button>
@@ -430,6 +430,7 @@ function tempClass(lead) {
 .page-header {
   display: flex; align-items: flex-start;
   justify-content: space-between; margin-bottom: 24px;
+  gap: 14px;
 }
 .page-title {
   font-size: 22px; font-weight: 600;
@@ -521,6 +522,7 @@ function tempClass(lead) {
   display: grid; grid-template-columns: 1fr 300px;
   gap: 16px; margin-bottom: 16px;
 }
+.section-spaced { margin-top: 16px; }
 
 /* ── Bot grid ────────────────────────────────────────────── */
 .bot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -655,5 +657,7 @@ function tempClass(lead) {
   .stats-grid--3 { grid-template-columns: 1fr 1fr; }
   .bot-grid      { grid-template-columns: 1fr; }
   .kban          { grid-template-columns: 1fr; }
+  .page-header   { flex-direction: column; }
+  .active-pill   { align-self: flex-start; }
 }
 </style>
