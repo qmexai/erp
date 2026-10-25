@@ -1,47 +1,25 @@
 <template>
   <div class="dashboard">
-    <!-- Loading Skeleton Impact -->
-    <div v-if="loading" class="w-full min-h-screen pt-4">
-      <div class="animate-pulse space-y-6">
-        <!-- Header Skeleton -->
-        <div class="flex justify-between items-start">
-          <div class="space-y-3">
-            <div class="h-10 w-72 bg-white/5 rounded-lg border border-white/5"></div>
-            <div class="h-4 w-48 bg-white/5 rounded-md"></div>
-          </div>
-          <div class="h-16 w-32 bg-white/5 rounded-2xl border border-white/5"></div>
-        </div>
-        <!-- Stats Row Skeleton -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div v-for="n in 4" :key="n" class="h-32 bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-4 flex flex-col justify-between">
-             <div class="h-3 w-20 bg-white/10 rounded"></div>
-             <div class="h-8 w-32 bg-white/10 rounded"></div>
-             <div class="h-6 w-full bg-white/5 rounded-t tracking-wider"></div>
-          </div>
-        </div>
-        <!-- Mid Grid Skeleton -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="h-[400px] bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-5"></div>
-          <div class="lg:col-span-2 h-[400px] bg-[var(--qx-bg1)] rounded-[14px] border border-[var(--qx-border)] p-5"></div>
-        </div>
-      </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner" />
+      <span>Loading dashboard…</span>
     </div>
 
-    <!-- Main Content -->
-    <div v-else class="w-full relative">
-      <!-- Error -->
-      <div v-if="error" class="error-banner">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.5"/>
-        </svg>
-        {{ error }}
-        <button class="retry-btn" @click="fetchAll">Retry</button>
-      </div>
+    <!-- Error -->
+    <div v-if="error" class="error-banner">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.5"/>
+      </svg>
+      {{ error }}
+      <button class="retry-btn" @click="fetchAll">Retry</button>
+    </div>
 
     <!-- Page header -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">Good {{ timeOfDay }}, {{ auth.user?.name || auth.user?.email || 'User' }}</h1>
+        <h1 class="page-title">Good {{ timeOfDay }}, {{ auth.user?.first_name || auth.user?.name || 'there' }}</h1>
         <div class="page-sub">
           <span>{{ todayLabel }}</span>
           <span class="status-chip">All systems operational</span>
@@ -62,19 +40,12 @@
     <!-- ── Stat cards – CEO / HR ─────────────────────────── -->
     <div v-if="isCeoOrHr" class="stats-grid stats-grid--4">
       <div class="stat-card blue">
-        <div class="stat-label">Gross Revenue</div>
+        <div class="stat-label">Total Revenue</div>
         <div class="stat-value">{{ formatCurrency(dashboardStats.total_revenue) }}</div>
         <div class="stat-footer"><span class="up">+12.4%</span> vs last month</div>
         <div class="sparkline">
           <div v-for="(h, i) in revenueBars" :key="i" class="bar" :style="{ height: h + '%' }" />
         </div>
-        <div class="glow" />
-      </div>
-
-      <div class="stat-card green">
-        <div class="stat-label">Net Profit (Balance)</div>
-        <div class="stat-value">{{ formatCurrency(dashboardStats.current_balance) }}</div>
-        <div class="stat-footer"><span class="up">Gross - Spend</span></div>
         <div class="glow" />
       </div>
 
@@ -289,7 +260,6 @@
       </div>
     </template>
 
-    </div> <!-- Close Main Content wrapper -->
   </div>
 </template>
 
@@ -297,7 +267,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import apiClient from '../api'
-import { formatCurrency, fmtDateShort as fmtDate } from '../utils/formatters'
 
 import AddEmployee        from '../components/AddEmployee.vue'
 import LeadsTable         from '../components/LeadsTable.vue'
@@ -392,6 +361,17 @@ const fetchAll = async () => {
 onMounted(fetchAll)
 
 /* ── Helpers ─────────────────────────────────────────────── */
+function formatCurrency(val) {
+  if (!val) return '₹0'
+  const n = Number(val)
+  if (n >= 100000) return `₹${(n/100000).toFixed(1)}L`
+  if (n >= 1000)   return `₹${(n/1000).toFixed(1)}K`
+  return `₹${n.toLocaleString('en-IN')}`
+}
+function fmtDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
 function statusCls(s) {
   return { Active:'active', Completed:'closed', 'In Review':'review', Pending:'pending', 'On Hold':'review', Cancelled:'leave' }[s] || 'pending'
 }
@@ -494,7 +474,7 @@ function tempClass(lead) {
 .stats-grid {
   display: grid; gap: 12px; margin-bottom: 20px;
 }
-.stats-grid--4 { grid-template-columns: repeat(5, 1fr); }
+.stats-grid--4 { grid-template-columns: repeat(4, 1fr); }
 .stats-grid--3 { grid-template-columns: repeat(3, 1fr); }
 
 .stat-card {
@@ -666,16 +646,13 @@ function tempClass(lead) {
 .empty { font-size: 13px; color: var(--qx-text3); font-style: italic; text-align: center; padding: 24px 0; }
 
 /* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 1300px) {
-  .stats-grid--4 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1100px) {
+  .stats-grid--4 { grid-template-columns: repeat(2, 1fr); }
   .mid-grid      { grid-template-columns: 1fr; }
 }
-@media (max-width: 900px) {
-  .stats-grid--4 { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .stats-grid--4,
-  .stats-grid--3 { grid-template-columns: 1fr; }
+  .stats-grid--3 { grid-template-columns: 1fr 1fr; }
   .bot-grid      { grid-template-columns: 1fr; }
   .kban          { grid-template-columns: 1fr; }
 }

@@ -45,8 +45,8 @@
         <div class="sidebar-user">
           <div class="user-avatar">{{ userInitials }}</div>
           <div class="user-info">
-            <div class="user-name">{{ auth.user?.name || auth.user?.email }}</div>
-            <div class="user-role">{{ auth.user?.role }}</div>
+            <div class="user-name">{{ displayName }}</div>
+            <div class="user-role">{{ designation }}</div>
           </div>
           <button class="logout-btn" title="Logout" @click="handleLogout">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -97,8 +97,8 @@
           <div class="topbar-user">
             <div class="topbar-avatar">{{ userInitials }}</div>
             <div class="topbar-user-info">
-              <div class="topbar-name">{{ auth.user?.name || auth.user?.email || 'User' }}</div>
-              <div class="topbar-role">{{ auth.user?.role }}</div>
+              <div class="topbar-name">{{ displayName }}</div>
+              <div class="topbar-role">{{ designation }}</div>
             </div>
           </div>
         </div>
@@ -169,6 +169,24 @@ const userInitials = computed(() => {
     || u.name?.[0]?.toUpperCase()
     || u.email?.[0]?.toUpperCase()
     || '?'
+})
+
+const displayName = computed(() => {
+  const user = auth.user
+  if (!user) return 'User'
+  return user.name
+    || [user.first_name, user.last_name].filter(Boolean).join(' ')
+    || 'User'
+})
+
+const designation = computed(() => {
+  const labels = {
+    CEO: 'Chief Executive Officer',
+    HR: 'Human Resources',
+    'Dept Head': 'Department Head',
+    Employee: 'Employee',
+  }
+  return labels[auth.user?.role] || auth.user?.role || 'Team member'
 })
 
 const pageTitle = computed(() => {

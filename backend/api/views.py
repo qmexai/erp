@@ -8,7 +8,8 @@ from .authentication import FirebaseAuthentication
 from .models import User, ActivityLog, Lead, Project, FinancialRecord, LeaveRequest, Meeting, Task, Invoice, LineItem
 from .serializers import LeadSerializer, ProjectSerializer, FinancialRecordSerializer, LeaveRequestSerializer, MeetingSerializer, TaskSerializer, InvoiceSerializer, LineItemSerializer, ActivityLogSerializer, UserSerializer
 from firebase_admin import auth as firebase_auth
-from django.db.models import Sum
+from django.db import transaction
+from django.db.models import Q, Sum
 from django.http import HttpResponse
 import logging
 from django.utils import timezone
@@ -17,7 +18,6 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 import io
-import csv
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,10 @@ class IsCEOOrHR(permissions.BasePermission):
 
 class IsManagerOrHigher(permissions.BasePermission):
     """
-    Custom permission for Dept Head, HR, and CEO.
+    Custom permission for Managers, HR, and CEO.
     """
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['CEO', 'HR', 'Dept Head']
+        return request.user.is_authenticated and request.user.role in ['CEO', 'HR', 'Manager']
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
@@ -46,11 +46,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = User.objects.all()
         search_query = self.request.query_params.get('search', None)
         if search_query is not None:
-            from django.db.models import Q
             queryset = queryset.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) |
-                Q(email__icontains=search_query)
+                Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
+                | Q(email__icontains=search_query)
             )
         return queryset
 
@@ -158,7 +157,7 @@ class LeadViewSet(viewsets.ModelViewSet):
 # --- 6. PROJECT MANAGEMENT ---
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
-    queryset = Project.objects.all().prefetch_related('assigned_to').order_by('-created_at')
+    queryset = Project.objects.all().order_by('-created_at')
     authentication_classes = [FirebaseAuthentication]
     
     def get_permissions(self):
@@ -175,8 +174,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         if user.role in ['CEO', 'HR']:
-            return Project.objects.all().prefetch_related('assigned_to').order_by('-created_at')
-        return user.projects.all().prefetch_related('assigned_to').order_by('-created_at')
+            return Project.objects.all().order_by('-created_at')
+        return user.projects.all().order_by('-created_at')
 
     def perform_create(self, serializer):
         project = serializer.save()
@@ -226,300 +225,82 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return response
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all().select_related('project').prefetch_related('line_items').order_by('-issue_date')
+    queryset = Invoice.objects.all().order_by('-issue_date')
     serializer_class = InvoiceSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsManagerOrHigher]
-    
-    def get_queryset(self):
-        # Auto-update overdue invoices
-        from django.utils import timezone
-        today = timezone.now().date()
-        Invoice.objects.filter(status='Unpaid', due_date__lt=today).update(status='Overdue')
-        return Invoice.objects.all().select_related('project').prefetch_related('line_items').order_by('-issue_date')
-
-    def perform_create(self, serializer):
-        invoice = serializer.save()
-        ActivityLog.objects.create(
-            actor=self.request.user,
-            action="Created Invoice",
-            details=f"Invoice {invoice.invoice_number} for {invoice.project.name} created by {self.request.user.email}"
-        )
-
-    def perform_update(self, serializer):
-        invoice = serializer.save()
-        ActivityLog.objects.create(
-            actor=self.request.user,
-            action="Updated Invoice",
-            details=f"Invoice {invoice.invoice_number} updated by {self.request.user.email}"
-        )
 
     @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
         invoice = self.get_object()
 
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-
         # Create a file-like buffer to receive PDF data.
         buffer = io.BytesIO()
 
-        # Document margins (40 points = ~0.55 in)
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=40,
-            leftMargin=40,
-            topMargin=40,
-            bottomMargin=45,
-            title=f"Invoice {invoice.invoice_number}"
-        )
+        # Create the PDF object, using the buffer as its "file."
+        p = canvas.Canvas(buffer, pagesize=letter)
 
-        # Styles
-        styles = getSampleStyleSheet()
+        # Document Info
+        p.setTitle(f"Invoice {invoice.invoice_number}")
 
-        title_style = ParagraphStyle(
-            'InvTitle',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=22,
-            leading=26,
-            textColor=colors.HexColor("#1e1b4b")  # Dark indigo
-        )
+        # Header
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(inch, 10.5 * inch, "Qmexai ERP - INVOICE")
 
-        meta_label_style = ParagraphStyle(
-            'MetaLabel',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            leading=13,
-            textColor=colors.HexColor("#64748b")  # Slate text
-        )
+        # Invoice Details
+        p.setFont("Helvetica", 12)
+        p.drawString(inch, 10 * inch, f"Invoice #: {invoice.invoice_number}")
+        p.drawString(inch, 9.8 * inch, f"Issue Date: {invoice.issue_date.strftime('%B %d, %Y')}")
+        p.drawString(inch, 9.6 * inch, f"Due Date: {invoice.due_date.strftime('%B %d, %Y')}")
+        p.drawString(inch, 9.4 * inch, f"Project: {invoice.project.name}")
+        p.drawString(inch, 9.2 * inch, f"Client: {invoice.project.client}")
 
-        meta_val_style = ParagraphStyle(
-            'MetaVal',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            leading=13,
-            textColor=colors.HexColor("#0f172a")  # Deep slate
-        )
+        # Line Items Table Header
+        p.setFont("Helvetica-Bold", 12)
+        y_position = 8.5 * inch
+        p.drawString(inch, y_position, "Description")
+        p.drawString(4 * inch, y_position, "Quantity")
+        p.drawString(5 * inch, y_position, "Unit Price")
+        p.drawString(6 * inch, y_position, "Total")
+        p.line(inch, y_position - 0.1 * inch, 7.5 * inch, y_position - 0.1 * inch)
 
-        th_style = ParagraphStyle(
-            'ThStyle',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            leading=12,
-            textColor=colors.white
-        )
-
-        td_style = ParagraphStyle(
-            'TdStyle',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            leading=13,
-            textColor=colors.HexColor("#334155")
-        )
-
-        td_num_style = ParagraphStyle(
-            'TdNumStyle',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            leading=13,
-            alignment=2,  # Right-aligned
-            textColor=colors.HexColor("#334155")
-        )
-
-        summary_label_style = ParagraphStyle(
-            'SummaryLabel',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            leading=13,
-            alignment=2,  # Right-aligned
-            textColor=colors.HexColor("#475569")
-        )
-
-        summary_val_style = ParagraphStyle(
-            'SummaryVal',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            leading=13,
-            alignment=2,  # Right-aligned
-            textColor=colors.HexColor("#0f172a")
-        )
-
-        total_label_style = ParagraphStyle(
-            'TotalLabel',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=11,
-            leading=15,
-            alignment=2,  # Right-aligned
-            textColor=colors.HexColor("#0f172a")
-        )
-
-        total_val_style = ParagraphStyle(
-            'TotalVal',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=12,
-            leading=16,
-            alignment=2,  # Right-aligned
-            textColor=colors.HexColor("#6366f1")  # Modern indigo
-        )
-
-        story = []
-
-        # 1. Header Row
-        header_left = Paragraph(
-            "<b>QMEXAI ERP</b><br/><font color='#64748b' size='8.5'>Operations & Billing Portal</font>", 
-            title_style
-        )
-        header_right = Paragraph(
-            "<font color='#6366f1'><b>INVOICE</b></font>", 
-            ParagraphStyle('InvHeadRight', parent=title_style, alignment=2, fontSize=24, leading=28)
-        )
+        # Line Items
+        p.setFont("Helvetica", 11)
+        y_position -= 0.3 * inch
+        line_items = invoice.line_items.all()
+        for item in line_items:
+            p.drawString(inch, y_position, item.description)
+            p.drawString(4.2 * inch, y_position, str(item.quantity))
+            p.drawString(5.2 * inch, y_position, f"${item.unit_price:,.2f}")
+            p.drawString(6.2 * inch, y_position, f"${item.total:,.2f}")
+            y_position -= 0.3 * inch
         
-        header_table = Table([[header_left, header_right]], colWidths=[266, 266])
-        header_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('PADDING', (0, 0), (-1, -1), 0),
-        ]))
-        story.append(header_table)
-        story.append(Spacer(1, 25))
+        p.line(inch, y_position + 0.1 * inch, 7.5 * inch, y_position + 0.1 * inch)
 
-        import html
+        # Totals
+        y_position -= 0.3 * inch
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(5 * inch, y_position, "Subtotal:")
+        p.drawString(6.2 * inch, y_position, f"${invoice.sub_total:,.2f}")
+        y_position -= 0.3 * inch
+        p.drawString(5 * inch, y_position, "Discount:")
+        p.drawString(6.2 * inch, y_position, f"- ${invoice.discount:,.2f}")
+        y_position -= 0.3 * inch
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(5 * inch, y_position, "Total:")
+        p.drawString(6.2 * inch, y_position, f"${invoice.total_amount:,.2f}")
 
-        # 2. Billing & Metadata Box
-        issue_date_str = invoice.issue_date.strftime('%B %d, %Y') if invoice.issue_date else 'N/A'
-        due_date_str = invoice.due_date.strftime('%B %d, %Y') if invoice.due_date else 'N/A'
-        
-        client_esc = html.escape(invoice.project.client)
-        bill_to_text = f"<b>BILL TO:</b><br/>" \
-                       f"<font size='10.5'><b>{client_esc}</b></font><br/>"
-        if invoice.project.company:
-            bill_to_text += f"{html.escape(invoice.project.company)}<br/>"
-        if invoice.project.phone:
-            bill_to_text += f"Phone: {html.escape(invoice.project.phone)}<br/>"
-        
-        bill_to_para = Paragraph(bill_to_text, meta_val_style)
-
-        details_text = f"<b>INVOICE DETAILS:</b><br/>" \
-                       f"<b>Project:</b> {html.escape(invoice.project.name)}<br/>" \
-                       f"<b>Invoice #:</b> {html.escape(invoice.invoice_number)}<br/>" \
-                       f"<b>Issue Date:</b> {html.escape(issue_date_str)}<br/>" \
-                       f"<b>Due Date:</b> {html.escape(due_date_str)}<br/>" \
-                       f"<b>Status:</b> <font color='#6366f1'><b>{html.escape(invoice.status)}</b></font>"
-        details_para = Paragraph(details_text, meta_val_style)
-
-        info_table = Table([[bill_to_para, details_para]], colWidths=[266, 266])
-        info_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('PADDING', (0, 0), (-1, -1), 12),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#e2e8f0")),
-            ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-        ]))
-        story.append(info_table)
-        story.append(Spacer(1, 25))
-
-        # 3. Line Items Table
-        table_data = [[
-            Paragraph("Description", th_style),
-            Paragraph("Qty", th_style),
-            Paragraph("Unit Price", th_style),
-            Paragraph("Total", th_style)
-        ]]
-
-        for item in invoice.line_items.all():
-            table_data.append([
-                Paragraph(html.escape(item.description), td_style),
-                Paragraph(str(item.quantity), td_num_style),
-                Paragraph(f"INR {item.unit_price:,.2f}", td_num_style),
-                Paragraph(f"INR {item.total:,.2f}", td_num_style),
-            ])
-
-        items_table = Table(table_data, colWidths=[282, 40, 105, 105])
-        items_table_style = [
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e293b")),  # Slate-800 Header
-            ('ALIGN', (0, 0), (-1, 0), 'LEFT'),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 7),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-            ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-        ]
-
-        # Alternating row colors
-        for i in range(1, len(table_data)):
-            if i % 2 == 0:
-                items_table_style.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#f8fafc")))
-
-        items_table.setStyle(TableStyle(items_table_style))
-        story.append(items_table)
-        story.append(Spacer(1, 20))
-
-        # 4. Summary & Totals
-        summary_data = [
-            [Paragraph("Subtotal:", summary_label_style), Paragraph(f"INR {invoice.sub_total:,.2f}", summary_val_style)],
-            [Paragraph("Discount:", summary_label_style), Paragraph(f"- INR {invoice.discount:,.2f}", summary_val_style)],
-            [Paragraph("Total Amount:", total_label_style), Paragraph(f"INR {invoice.total_amount:,.2f}", total_val_style)],
-        ]
-        summary_table = Table(summary_data, colWidths=[382, 150])
-        summary_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            ('LEFTPADDING', (0, 0), (-1, -1), 0),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-            ('LINEABOVE', (0, 2), (1, 2), 1, colors.HexColor("#1e293b")),
-        ]))
-
-        story.append(KeepTogether([summary_table]))
-
-        # Page templates / Draw PAID watermark
-        def make_page_renderer(inv):
-            def renderer(canvas, doc_obj):
-                canvas.saveState()
-                # Top blue line
-                canvas.setFillColor(colors.HexColor("#6366f1"))
-                canvas.rect(0, 786, 612, 6, fill=True, stroke=False)
-                
-                # Draw watermark if Paid
-                if inv.status == 'Paid':
-                    canvas.setFont("Helvetica-Bold", 80)
-                    canvas.setFillColor(colors.HexColor("#22c55e"))
-                    canvas.saveState()
-                    canvas.setFillAlpha(0.12)
-                    canvas.translate(306, 396)  # center of letter
-                    canvas.rotate(35)
-                    canvas.drawCentredString(0, 0, "PAID")
-                    canvas.restoreState()
-
-                # Footer
-                canvas.setFont("Helvetica-Oblique", 8)
-                canvas.setFillColor(colors.HexColor("#64748b"))
-                canvas.drawString(40, 22, "Thank you for your business! Qmexai ERP - Innovation Portal")
-                canvas.drawRightString(572, 22, f"Page {canvas._pageNumber}")
-                
-                canvas.restoreState()
-            return renderer
-
-        # Build Document
-        doc.build(story, onFirstPage=make_page_renderer(invoice), onLaterPages=make_page_renderer(invoice))
+        # Footer
+        p.setFont("Helvetica-Oblique", 9)
+        p.drawString(inch, 1 * inch, "Thank you for your business!")
+        p.drawString(inch, 0.8 * inch, "Qmexai - Your Partner in Innovation")
 
         # Close the PDF object cleanly.
+        p.showPage()
+        p.save()
+
+        # FileResponse sets the Content-Disposition header so that browsers
+        # present the option to save the file.
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'
@@ -532,7 +313,7 @@ class LineItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCEOOrHR]
 
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ActivityLog.objects.all().select_related('actor').order_by('-timestamp')
+    queryset = ActivityLog.objects.all().order_by('-timestamp')
     serializer_class = ActivityLogSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsCEOOrHR]
@@ -540,7 +321,7 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
 # --- 7. FINANCE MANAGEMENT ---
 class FinanceViewSet(viewsets.ModelViewSet):
     serializer_class = FinancialRecordSerializer
-    queryset = FinancialRecord.objects.all().select_related('added_by', 'project').order_by('-date')
+    queryset = FinancialRecord.objects.all().order_by('-date')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsCEOOrHR]
 
@@ -557,7 +338,7 @@ class FinanceViewSet(viewsets.ModelViewSet):
         return response
 
     def get_queryset(self):
-        return FinancialRecord.objects.all().select_related('added_by', 'project').order_by('-date')
+        return FinancialRecord.objects.all().order_by('-date')
 
     @action(detail=False, methods=['get'])
     def download(self, request):
@@ -573,7 +354,7 @@ class FinanceViewSet(viewsets.ModelViewSet):
 # --- 8. LEAVE MANAGEMENT ---
 class LeaveViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
-    queryset = LeaveRequest.objects.all().select_related('employee').order_by('-start_date')
+    queryset = LeaveRequest.objects.all().order_by('-start_date')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -592,12 +373,12 @@ class LeaveViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'CEO':
-            return LeaveRequest.objects.all().select_related('employee')
+            return LeaveRequest.objects.all()
         elif user.role == 'HR':
-            return LeaveRequest.objects.filter(employee__role__in=['Employee', 'Dept Head']).select_related('employee')
+            return LeaveRequest.objects.filter(employee__role__in=['Employee', 'Dept Head'])
         elif user.role == 'Dept Head':
-            return LeaveRequest.objects.filter(employee__department=user.department).select_related('employee')
-        return LeaveRequest.objects.filter(employee=user).select_related('employee')
+            return LeaveRequest.objects.filter(employee__department=user.department)
+        return LeaveRequest.objects.filter(employee=user)
 
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
@@ -630,7 +411,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
 # --- 9. MEETING MANAGEMENT ---
 class MeetingViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingSerializer
-    queryset = Meeting.objects.all().select_related('host').prefetch_related('participants').order_by('-start_time')
+    queryset = Meeting.objects.all().order_by('-start_time')
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -649,7 +430,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         # Use .distinct() to avoid duplicate meetings if a user is both a host and a participant.
-        return (Meeting.objects.filter(participants=user) | Meeting.objects.filter(host=user)).distinct().select_related('host').prefetch_related('participants')
+        return (Meeting.objects.filter(participants=user) | Meeting.objects.filter(host=user)).distinct()
 
 # --- 10. TASK MANAGEMENT ---
 class TaskViewSet(viewsets.ModelViewSet):
@@ -668,10 +449,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         view = self.request.query_params.get('view', 'assigned_to_me')
 
         if view == 'assigned_by_me':
-            return Task.objects.filter(assigned_by=user).select_related('assigned_to', 'assigned_by', 'project').order_by('-created_at')
+            return Task.objects.filter(assigned_by=user).order_by('-created_at')
         
         # Default to tasks assigned to the user
-        return Task.objects.filter(assigned_to=user).select_related('assigned_to', 'assigned_by', 'project').order_by('-created_at')
+        return Task.objects.filter(assigned_to=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         """
@@ -739,26 +520,18 @@ class FirebaseLoginView(APIView):
             if not email:
                 return Response({"error": "Email not found in Firebase token"}, status=400)
 
-            # Strictly require the user profile to be pre-created by HR/CEO
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                logger.warning(f"Login attempt failed: Email {email} does not exist in the ERP system.")
-                return Response({"error": "This account is not authorized/registered in the ERP system. Please contact HR."}, status=401)
+                logger.warning(f"Rejected login for unregistered Firebase user: {email}")
+                return Response({"error": "This account is not registered"}, status=401)
 
             if uid and not user.uid:
                 user.uid = uid
-                user.save()
+                user.save(update_fields=['uid'])
 
             if not user.is_active:
                 return Response({"error": "Account is inactive"}, status=403)
-
-            # Log the login activity
-            ActivityLog.objects.create(
-                actor=user,
-                action="Logged In",
-                details=f"Secure User Login: {user.email}"
-            )
 
             # Return user data upon successful login
             return Response(UserSerializer(user).data)
@@ -779,14 +552,18 @@ class CreateEmployeeView(APIView):
     permission_classes = [IsCEOOrHR]
 
     def post(self, request):
-        email = request.data.get('email')
+        email = str(request.data.get('email', '')).strip().lower()
         password = request.data.get('password')
         role = request.data.get('role')
-        name = request.data.get('name')
-        department = request.data.get('department', '')
+        name = str(request.data.get('name', '')).strip()
+        department = str(request.data.get('department', '')).strip()
 
         if not all([email, password, role, name]):
             return Response({'error': 'Missing required fields'}, status=400)
+        if role not in dict(User.ROLE_CHOICES):
+            return Response({'error': 'Invalid employee role'}, status=400)
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'An account with this email already exists'}, status=409)
 
         try:
             # 1. Create user in Firebase
@@ -796,27 +573,31 @@ class CreateEmployeeView(APIView):
                 display_name=name
             )
 
-            # 2. Create user in Django
-            # The password is not stored in plain text in Django, set_password handles hashing
-            user = User.objects.create_user(
-                email=email,
-                role=role,
-                first_name=name,
-                department=department
-            )
-            user.set_password(password)
-            user.save()
-            
-            ActivityLog.objects.create(
-                actor=request.user,
-                action="Created Employee",
-                details=f"Employee {user.email} ({user.role}) created by {request.user.email}"
-            )
+            first_name, _, last_name = name.partition(' ')
+            try:
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        email=email,
+                        password=password,
+                        role=role,
+                        first_name=first_name,
+                        last_name=last_name,
+                        department=department or None,
+                        uid=firebase_user.uid,
+                    )
+                    ActivityLog.objects.create(
+                        actor=request.user,
+                        action="Created Employee",
+                        details=f"Employee {user.email} ({user.role}) created by {request.user.email}",
+                    )
+            except Exception:
+                firebase_auth.delete_user(firebase_user.uid)
+                raise
 
             return Response({
                 'message': 'Employee created successfully',
                 'email': user.email,
-                'password': password  # Return the generated password
+                'password': password
             }, status=201)
 
         except Exception as e:
@@ -854,7 +635,7 @@ class DashboardStatsView(APIView):
             
             # Invoice Stats
             paid_invoices = Invoice.objects.filter(status='Paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-            pending_invoices = Invoice.objects.filter(status='Unpaid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            pending_invoices = Invoice.objects.filter(status='Pending').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
             overdue_invoices = Invoice.objects.filter(status='Overdue').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
             
             stats['paid_invoices_total'] = paid_invoices
@@ -862,7 +643,7 @@ class DashboardStatsView(APIView):
             stats['overdue_invoices_total'] = overdue_invoices
             stats['current_balance'] = total_revenue - total_expenses # Simplified, can be more complex
 
-        elif user.role == 'Dept Head':
+        elif user.role == 'Manager':
             stats['assigned_projects'] = user.projects.count()
             stats['tasks_assigned_by_you'] = Task.objects.filter(assigned_by=user).count()
             stats['your_completed_tasks'] = Task.objects.filter(assigned_to=user, completed=True).count()
