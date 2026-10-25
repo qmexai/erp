@@ -1,5 +1,9 @@
 <template>
   <div class="panel-bd !p-0 overflow-x-auto">
+    <div v-if="error" class="m-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+      {{ error }}
+      <button type="button" class="ml-3 font-semibold text-rose-200 underline" @click="fetchLeaveRequests">Retry</button>
+    </div>
     <table class="tbl w-full m-0">
       <thead>
         <tr>
@@ -46,6 +50,7 @@ import apiClient from '../api'; // Import the new API client
 import { useAuthStore } from '../stores/auth';
 
 const leaveRequests = ref([]);
+const error = ref('');
 const auth = useAuthStore();
 
 const canManageLeaves = computed(() => {
@@ -55,11 +60,13 @@ const canManageLeaves = computed(() => {
 
 const fetchLeaveRequests = async () => {
   try {
+    error.value = '';
     const response = await apiClient.get('/leave-requests/');
-    leaveRequests.value = response.data;
-  } catch (error) {
-    console.error('Error fetching leave requests:', error);
-    alert('Failed to load leave requests.');
+    leaveRequests.value = Array.isArray(response.data) ? response.data : [];
+  } catch (caughtError) {
+    console.error('Error fetching leave requests:', caughtError.response?.data || caughtError);
+    leaveRequests.value = [];
+    error.value = caughtError.response?.data?.detail || 'Unable to load leave requests. Please try again.';
   }
 };
 

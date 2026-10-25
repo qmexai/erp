@@ -13,6 +13,10 @@
     </div>
 
     <div v-else class="overflow-x-auto">
+      <div v-if="error" class="mx-6 mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+        {{ error }}
+        <button type="button" class="ml-3 font-semibold text-rose-200 underline" @click="fetchMeetings">Retry</button>
+      </div>
       <table class="min-w-full">
         <thead>
           <tr class="border-b border-white/5">
@@ -63,16 +67,19 @@ import apiClient from '../api';
 
 const meetings = ref([]);
 const loading = ref(true);
+const error = ref('');
 
 const fetchMeetings = async () => {
   try {
     loading.value = true;
+    error.value = '';
     const response = await apiClient.get('/meetings/');
     // Ensure we always have an array to prevent .length errors
     meetings.value = Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error('Error fetching meetings:', error);
+  } catch (caughtError) {
+    console.error('Error fetching meetings:', caughtError.response?.data || caughtError);
     meetings.value = [];
+    error.value = caughtError.response?.data?.detail || 'Unable to load meetings. Please try again.';
   } finally {
     // Small timeout for smooth UI transition
     setTimeout(() => { loading.value = false; }, 300);

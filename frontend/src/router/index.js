@@ -57,13 +57,13 @@ const routes = [
         path: 'meetings',
         name: 'Meetings',
         component: () => import('../views/Meetings.vue'),
-        meta: { roles: ['CEO', 'Manager', 'Employee'] }
+        meta: { roles: ['CEO', 'HR', 'Dept Head', 'Manager', 'Employee'] }
       },
       {
         path: 'leave-requests',
         name: 'LeaveRequests',
         component: () => import('../views/LeaveRequests.vue'),
-        meta: { roles: ['CEO', 'Manager', 'Employee'] }
+        meta: { roles: ['CEO', 'HR', 'Dept Head', 'Manager', 'Employee'] }
       },
       {
         path: 'settings',
