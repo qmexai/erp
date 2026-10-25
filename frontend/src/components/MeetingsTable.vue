@@ -136,17 +136,84 @@
           </div>
         </div>
 
-        <a
-          v-if="selectedMeeting.google_meet_link"
-          :href="selectedMeeting.google_meet_link"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
-        >
-          Open meeting link
-        </a>
+        <div class="flex flex-wrap gap-3">
+          <a
+            v-if="selectedMeeting.google_meet_link"
+            :href="selectedMeeting.google_meet_link"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+          >
+            Open meeting link
+          </a>
+          <button
+            type="button"
+            class="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+            @click="startEditingMeeting"
+          >
+            Edit meeting
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/20"
+            @click="deleteMeeting"
+          >
+            Delete meeting
+          </button>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div
+    v-if="editingMeeting"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-meeting-title"
+    @click.self="editingMeeting = null"
+  >
+    <form class="w-full max-w-2xl space-y-5 rounded-3xl border border-white/10 bg-[#121214] p-6 shadow-2xl" @submit.prevent="saveMeeting">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="detail-label">Meeting management</p>
+          <h2 id="edit-meeting-title" class="mt-1 text-2xl font-bold text-white">Edit meeting</h2>
+        </div>
+        <button type="button" class="text-2xl text-slate-400 hover:text-white" @click="editingMeeting = null">&times;</button>
+      </div>
+      <div v-if="editError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+        {{ editError }}
+      </div>
+      <label class="edit-field">Title
+        <input v-model.trim="editingMeeting.title" required />
+      </label>
+      <label class="edit-field">Agenda
+        <textarea v-model="editingMeeting.agenda" rows="4" placeholder="Add or update the meeting agenda"></textarea>
+      </label>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="edit-field">Date and time
+          <input v-model="editingMeeting.start_time" type="datetime-local" required />
+        </label>
+        <label class="edit-field">Meeting link
+          <input v-model.trim="editingMeeting.google_meet_link" type="url" placeholder="https://meet.google.com/..." />
+        </label>
+      </div>
+      <div>
+        <p class="detail-label">Participants</p>
+        <div class="mt-2 grid max-h-40 gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-3 sm:grid-cols-2">
+          <label v-for="user in users" :key="user.id" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-300 hover:bg-white/10">
+            <input v-model="editingMeeting.participants" type="checkbox" :value="user.id" />
+            <span>{{ getParticipantName(user) }}</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10" @click="editingMeeting = null">Cancel</button>
+        <button type="submit" :disabled="saving" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60">
+          {{ saving ? 'Saving…' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
@@ -158,6 +225,10 @@ const meetings = ref([]);
 const loading = ref(true);
 const error = ref('');
 const selectedMeeting = ref(null);
+const editingMeeting = ref(null);
+const users = ref([]);
+const saving = ref(false);
+const editError = ref('');
 
 const fetchMeetings = async () => {
   try {
@@ -174,6 +245,12 @@ const fetchMeetings = async () => {
     // Small timeout for smooth UI transition
     setTimeout(() => { loading.value = false; }, 300);
   }
+};
+
+const fetchUsers = async () => {
+  if (users.value.length) return;
+  const response = await apiClient.get('/users/');
+  users.value = Array.isArray(response.data) ? response.data : [];
 };
 
 const formatDateTime = (dateStr) => {
@@ -222,6 +299,59 @@ const openMeetingDetails = (meeting) => {
 
 const closeMeetingDetails = () => {
   selectedMeeting.value = null;
+};
+
+const startEditingMeeting = async () => {
+  editError.value = '';
+  try {
+    await fetchUsers();
+    const participants = selectedMeeting.value.participants_details || selectedMeeting.value.participants || [];
+    editingMeeting.value = {
+      id: selectedMeeting.value.id,
+      title: selectedMeeting.value.title || '',
+      agenda: selectedMeeting.value.agenda || '',
+      start_time: selectedMeeting.value.start_time
+        ? new Date(selectedMeeting.value.start_time).toISOString().slice(0, 16)
+        : '',
+      google_meet_link: selectedMeeting.value.google_meet_link || '',
+      participants: participants.map((participant) => typeof participant === 'object' ? participant.id : participant),
+    };
+    selectedMeeting.value = null;
+  } catch (caughtError) {
+    editError.value = caughtError.response?.data?.detail || 'Unable to load participants for editing.';
+  }
+};
+
+const saveMeeting = async () => {
+  saving.value = true;
+  editError.value = '';
+  try {
+    const response = await apiClient.patch(`/meetings/${editingMeeting.value.id}/`, {
+      title: editingMeeting.value.title,
+      agenda: editingMeeting.value.agenda,
+      start_time: new Date(editingMeeting.value.start_time).toISOString(),
+      google_meet_link: editingMeeting.value.google_meet_link || '',
+      participants: editingMeeting.value.participants,
+    });
+    const index = meetings.value.findIndex((meeting) => meeting.id === response.data.id);
+    if (index !== -1) meetings.value[index] = response.data;
+    editingMeeting.value = null;
+  } catch (caughtError) {
+    editError.value = caughtError.response?.data?.detail || 'Unable to save meeting changes.';
+  } finally {
+    saving.value = false;
+  }
+};
+
+const deleteMeeting = async () => {
+  if (!window.confirm(`Delete "${selectedMeeting.value.title}"?`)) return;
+  try {
+    await apiClient.delete(`/meetings/${selectedMeeting.value.id}/`);
+    meetings.value = meetings.value.filter((meeting) => meeting.id !== selectedMeeting.value.id);
+    selectedMeeting.value = null;
+  } catch (caughtError) {
+    error.value = caughtError.response?.data?.detail || 'Unable to delete this meeting.';
+  }
 };
 
 onMounted(fetchMeetings);

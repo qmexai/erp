@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    CreateEmployeeView, DashboardStatsView, FirebaseLoginView,
+    CreateEmployeeView, DashboardStatsView, FirebaseLoginView, ProfileView,
     LeadViewSet, ProjectViewSet, FinanceViewSet, LeaveViewSet, MeetingViewSet, TaskViewSet,
     InvoiceViewSet, LineItemViewSet, ActivityLogViewSet, UserViewSet
 )
@@ -24,6 +24,7 @@ router.register(r'activity-logs', ActivityLogViewSet, basename='activitylog')
 urlpatterns = [
     path('create-employee/', CreateEmployeeView.as_view(), name='create_employee'),
     path('login/', FirebaseLoginView.as_view(), name='firebase_login'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     path('dashboard/stats/', DashboardStatsView.as_view(),name="dashboard_stats"),
     path('', include(router.urls)),
 ]

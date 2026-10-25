@@ -66,6 +66,12 @@ class UserTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertEqual(self.user.uid, "mock-uid-123")
+        self.assertTrue(
+            ActivityLog.objects.filter(
+                actor=self.user,
+                action="Logged In",
+            ).exists()
+        )
 
         # 2. Unregistered email should be rejected (security fix)
         mock_verify.return_value = {"email": "stranger@external.com", "uid": "stranger-uid"}

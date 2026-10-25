@@ -8,6 +8,13 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'name', 'role', 'uid', 'department']
 
+    def update(self, instance, validated_data):
+        for field in ('first_name', 'last_name', 'department'):
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+        instance.save(update_fields=['first_name', 'last_name', 'department'])
+        return instance
+
 class LeadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lead

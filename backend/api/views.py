@@ -53,6 +53,24 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             )
         return queryset
 
+class ProfileView(APIView):
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+    def patch(self, request):
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        ActivityLog.objects.create(
+            actor=request.user,
+            action="Updated Profile",
+            details=f"{request.user.name} updated personal settings.",
+        )
+        return Response(UserSerializer(user).data)
+
 # --- 5. LEAD MANAGEMENT ---
 class LeadViewSet(viewsets.ModelViewSet):
 
@@ -115,6 +133,23 @@ class LeadViewSet(viewsets.ModelViewSet):
             details=f"Lead: {lead.client_name} status changed to {lead.status} by {request.user.email}"
         )
         return Response({'message': 'Lead updated.'})
+
+    def perform_update(self, serializer):
+        lead = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Lead",
+            details=f"Lead '{lead.client_name}' updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        title = instance.client_name or instance.company_name or instance.pk
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Lead",
+            details=f"Lead '{title}' deleted by {self.request.user.email}",
+        )
 
     @action(detail=True, methods=['post'])
     def convert_to_project(self, request, pk=None):
@@ -193,6 +228,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
             details=f"Project '{project.name}' updated by {self.request.user.email}"
         )
 
+    def perform_destroy(self, instance):
+        name = instance.name
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Project",
+            details=f"Project '{name}' deleted by {self.request.user.email}",
+        )
+
     @action(detail=True, methods=['post'], url_path='assign-users')
     def assign_users(self, request, pk=None):
         project = self.get_object()
@@ -229,6 +273,31 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsManagerOrHigher]
+
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Created Invoice",
+            details=f"Invoice '{invoice.invoice_number}' created by {self.request.user.email}",
+        )
+
+    def perform_update(self, serializer):
+        invoice = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Invoice",
+            details=f"Invoice '{invoice.invoice_number}' updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        invoice_number = instance.invoice_number
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Invoice",
+            details=f"Invoice '{invoice_number}' deleted by {self.request.user.email}",
+        )
 
     @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
@@ -312,6 +381,31 @@ class LineItemViewSet(viewsets.ModelViewSet):
     authentication_classes = [FirebaseAuthentication]
     permission_classes = [IsCEOOrHR]
 
+    def perform_create(self, serializer):
+        item = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Created Invoice Line Item",
+            details=f"Line item '{item.description}' created by {self.request.user.email}",
+        )
+
+    def perform_update(self, serializer):
+        item = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Invoice Line Item",
+            details=f"Line item '{item.description}' updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        description = instance.description
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Invoice Line Item",
+            details=f"Line item '{description}' deleted by {self.request.user.email}",
+        )
+
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ActivityLog.objects.all().order_by('-timestamp')
     serializer_class = ActivityLogSerializer
@@ -336,6 +430,23 @@ class FinanceViewSet(viewsets.ModelViewSet):
             details=f"Finance record added by {request.user.email}"
         )
         return response
+
+    def perform_update(self, serializer):
+        record = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Finance Record",
+            details=f"Finance record {record.id} updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        record_id = instance.id
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Finance Record",
+            details=f"Finance record {record_id} deleted by {self.request.user.email}",
+        )
 
     def get_queryset(self):
         return FinancialRecord.objects.all().order_by('-date')
@@ -408,6 +519,23 @@ class LeaveViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Leave rejected.'})
         return Response({'error': 'Unauthorized'}, status=403)
 
+    def perform_update(self, serializer):
+        leave = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Leave Request",
+            details=f"Leave request {leave.id} updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        leave_id = instance.id
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Leave Request",
+            details=f"Leave request {leave_id} deleted by {self.request.user.email}",
+        )
+
 # --- 9. MEETING MANAGEMENT ---
 class MeetingViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingSerializer
@@ -426,6 +554,23 @@ class MeetingViewSet(viewsets.ModelViewSet):
             details=f"Meeting scheduled by {request.user.email}"
         )
         return response
+
+    def perform_update(self, serializer):
+        meeting = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Meeting",
+            details=f"Meeting '{meeting.title}' updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        title = instance.title
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Meeting",
+            details=f"Meeting '{title}' deleted by {self.request.user.email}",
+        )
 
     def get_queryset(self):
         user = self.request.user
@@ -485,6 +630,23 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return Response(self.get_serializer(task).data)
 
+    def perform_update(self, serializer):
+        task = serializer.save()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Updated Task",
+            details=f"Task '{task.title}' updated by {self.request.user.email}",
+        )
+
+    def perform_destroy(self, instance):
+        title = instance.title
+        instance.delete()
+        ActivityLog.objects.create(
+            actor=self.request.user,
+            action="Deleted Task",
+            details=f"Task '{title}' deleted by {self.request.user.email}",
+        )
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -532,6 +694,12 @@ class FirebaseLoginView(APIView):
 
             if not user.is_active:
                 return Response({"error": "Account is inactive"}, status=403)
+
+            ActivityLog.objects.create(
+                actor=user,
+                action="Logged In",
+                details=f"{user.name} signed in to Qmexai ERP.",
+            )
 
             # Return user data upon successful login
             return Response(UserSerializer(user).data)
